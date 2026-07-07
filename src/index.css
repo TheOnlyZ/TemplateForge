@@ -1,0 +1,70 @@
+:root {
+  --bg: #0f1722;
+  --surface: #131d2b;
+  --surface-elevated: #192638;
+  --text: #d7deea;
+  --text-h: #f4f7fb;
+  --muted-text: #99a7bb;
+  --border: rgba(147, 168, 193, 0.2);
+  --accent: #7aa2ff;
+  --accent-bg: rgba(122, 162, 255, 0.16);
+  --accent-border: rgba(122, 162, 255, 0.4);
+  --warning: #f0b45d;
+  --shadow: rgba(4, 10, 22, 0.38) 0 18px 36px -24px;
+  --sans: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --mono: 'SFMono-Regular', ui-monospace, monospace;
+  font: 16px/1.5 var(--sans);
+  color: var(--text);
+  background: var(--bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at top left, rgba(122, 162, 255, 0.16), transparent 20%),
+    linear-gradient(180deg, #101726 0%, #0d141e 100%);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+h1,
+h2,
+h3,
+h4,
+p,
+ul,
+ol,
+dl {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+}
+
+code {
+  font-family: var(--mono);
+  font-size: 0.875em;
+  padding: 0.1rem 0.35rem;
+  border-radius: 0.35rem;
+  background: rgba(153, 167, 187, 0.12);
+}
