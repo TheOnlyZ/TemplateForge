@@ -24,4 +24,3 @@ npm run build
 
 The current implementation intentionally prioritizes domain correctness over feature breadth. The next major build slice is the first real shape vertical: rectangular boxes, live SVG preview, and true-scale vector export.
 
- 487394ffb517f059acc3388013d780e083d87b57
