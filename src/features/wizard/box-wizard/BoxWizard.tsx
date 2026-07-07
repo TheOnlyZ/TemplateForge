@@ -235,6 +235,10 @@ export function BoxWizard({
             </label>
           </div>
 
+          <p className="toolbar-note">
+            Supports US Letter, US Legal, A4, and A3 using the same calibrated PDF export path.
+          </p>
+
           <div className="margin-grid">
             {([
               ['top', 'Top'],
@@ -256,6 +260,10 @@ export function BoxWizard({
               </label>
             ))}
           </div>
+
+          <p className="toolbar-note">
+            Margins below 6.35 mm can fit more geometry, but some printers may clip calibration and tiling guides near the sheet edge.
+          </p>
         </div>
       )}
 

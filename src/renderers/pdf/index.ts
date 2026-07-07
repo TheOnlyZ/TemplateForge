@@ -1,13 +1,53 @@
-import { PDFDocument, PDFFont, PDFPage, StandardFonts, rgb } from 'pdf-lib'
+import {
+  PDFDocument,
+  PDFFont,
+  PDFPage,
+  StandardFonts,
+  clip,
+  endPath,
+  popGraphicsState,
+  pushGraphicsState,
+  rectangle,
+  rgb,
+} from 'pdf-lib'
 import type { Point } from '../../domain/geometry/index.ts'
-import type { LayoutResult } from '../../domain/layout/index.ts'
-import type { PaperDefinition } from '../../domain/paper/index.ts'
+import {
+  layoutTemplate,
+  LayoutAssemblyLabel,
+  LayoutAlignmentGuide,
+  LayoutJoinIndicator,
+  LayoutOverlapRegion,
+  LayoutRegistrationMark,
+  LayoutResult,
+} from '../../domain/layout/index.ts'
+import {
+  getOrientedPaperDimensions,
+  type MarginConfig,
+  type OrientationPreference,
+  type PaperDefinition,
+} from '../../domain/paper/index.ts'
 import type { CutPath, FoldLine, Tab, TemplateItem } from '../../domain/templates/index.ts'
 
 const POINTS_PER_MM = 72 / 25.4
+const REGISTRATION_MARK_HALF_SIZE_MM = 2.6
 
 function mmToPt(value: number) {
   return value * POINTS_PER_MM
+}
+
+function drawOverlapRegion(page: PDFPage, pageHeightMm: number, region: LayoutOverlapRegion) {
+  const topLeft = toPdfPoint(pageHeightMm, { x: region.bounds.minX, y: region.bounds.minY })
+  page.drawRectangle({
+    x: topLeft.x,
+    y: topLeft.y - mmToPt(region.bounds.height),
+    width: mmToPt(region.bounds.width),
+    height: mmToPt(region.bounds.height),
+    color: rgb(0.57, 0.66, 0.86),
+    opacity: 0.06,
+    borderColor: rgb(0.57, 0.66, 0.86),
+    borderWidth: mmToPt(0.12),
+    borderOpacity: 0.16,
+  })
 }
 
 function toPdfPoint(pageHeightMm: number, point: Point) {
@@ -67,6 +107,65 @@ function drawFoldLine(page: PDFPage, pageHeightMm: number, line: FoldLine) {
   drawOpenPath(page, pageHeightMm, [line.start, line.end], rgb(0.32, 0.49, 0.96), 0.28, [5, 3])
 }
 
+function drawAlignmentGuide(page: PDFPage, pageHeightMm: number, guide: LayoutAlignmentGuide) {
+  drawOpenPath(page, pageHeightMm, [guide.start, guide.end], rgb(0.61, 0.66, 0.76), 0.2, [2, 2])
+}
+
+function drawRegistrationMark(page: PDFPage, pageHeightMm: number, mark: LayoutRegistrationMark) {
+  drawOpenPath(
+    page,
+    pageHeightMm,
+    [
+      { x: mark.x - REGISTRATION_MARK_HALF_SIZE_MM, y: mark.y },
+      { x: mark.x + REGISTRATION_MARK_HALF_SIZE_MM, y: mark.y },
+    ],
+    rgb(0.76, 0.23, 0.27),
+    0.24,
+  )
+  drawOpenPath(
+    page,
+    pageHeightMm,
+    [
+      { x: mark.x, y: mark.y - REGISTRATION_MARK_HALF_SIZE_MM },
+      { x: mark.x, y: mark.y + REGISTRATION_MARK_HALF_SIZE_MM },
+    ],
+    rgb(0.76, 0.23, 0.27),
+    0.24,
+  )
+}
+
+function drawAssemblyLabel(
+  page: PDFPage,
+  pageHeightMm: number,
+  label: LayoutAssemblyLabel,
+  font: PDFFont,
+) {
+  const labelOrigin = toPdfPoint(pageHeightMm, { x: label.x, y: label.y })
+  page.drawText(label.text, {
+    x: labelOrigin.x - label.text.length * 1.85,
+    y: labelOrigin.y - 3,
+    size: 6.5,
+    font,
+    color: rgb(0.47, 0.53, 0.64),
+  })
+}
+
+function drawJoinIndicator(
+  page: PDFPage,
+  pageHeightMm: number,
+  indicator: LayoutJoinIndicator,
+  font: PDFFont,
+) {
+  const origin = toPdfPoint(pageHeightMm, { x: indicator.x, y: indicator.y })
+  page.drawText(indicator.text, {
+    x: origin.x - indicator.text.length * 1.55,
+    y: origin.y - 2.5,
+    size: 6,
+    font,
+    color: rgb(0.21, 0.29, 0.46),
+  })
+}
+
 function drawCalibrationBlock(
   page: PDFPage,
   pageHeightMm: number,
@@ -103,6 +202,81 @@ export interface TemplatePdfExportOptions {
   paper: PaperDefinition
 }
 
+export interface ProjectPdfExportItem extends TemplatePdfExportOptions {
+  id: string
+  orientation: OrientationPreference
+  margins: MarginConfig
+}
+
+function buildProjectGroupKey(item: ProjectPdfExportItem) {
+  return [
+    item.paper.id,
+    item.orientation,
+    item.margins.top,
+    item.margins.right,
+    item.margins.bottom,
+    item.margins.left,
+  ].join(':')
+}
+
+function buildProjectGroupName(items: ProjectPdfExportItem[]) {
+  if (items.length === 1) {
+    return items[0]!.template.name
+  }
+
+  return `${items[0]!.paper.label} Project Batch (${items.length} items)`
+}
+
+function mergeProjectGroupTemplates(items: ProjectPdfExportItem[]): TemplateItem {
+  return {
+    id: `project-batch:${items.map((item) => item.id).join(':')}`,
+    version: 1,
+    name: buildProjectGroupName(items),
+    shapeType:
+      items.every((item) => item.template.shapeType === items[0]!.template.shapeType)
+        ? items[0]!.template.shapeType
+        : 'mixed-project',
+    dimensionsMm: Object.fromEntries(
+      items.flatMap((item) =>
+        Object.entries(item.template.dimensionsMm).map(([key, value]) => [`${item.id}.${key}`, value]),
+      ),
+    ),
+    parts: items.flatMap((item) => item.template.parts),
+    panels: items.flatMap((item) => item.template.panels),
+    cutPaths: items.flatMap((item) => item.template.cutPaths),
+    foldLines: items.flatMap((item) => item.template.foldLines),
+    tabs: items.flatMap((item) => item.template.tabs),
+    joinEdges: items.flatMap((item) => item.template.joinEdges),
+    annotations: items.flatMap((item) => item.template.annotations),
+    splitCandidates: items.flatMap((item) => item.template.splitCandidates),
+    assemblyNotes: items.flatMap((item) => item.template.assemblyNotes),
+    pages: [],
+    metadata: {
+      groupedExport: true,
+      itemCount: items.length,
+      paperSizeId: items[0]!.paper.id,
+    },
+  }
+}
+
+function groupProjectPdfItems(items: ProjectPdfExportItem[]) {
+  const groups = new Map<string, ProjectPdfExportItem[]>()
+
+  for (const item of items) {
+    const key = buildProjectGroupKey(item)
+    const existing = groups.get(key)
+
+    if (existing) {
+      existing.push(item)
+      continue
+    }
+
+    groups.set(key, [item])
+  }
+
+  return [...groups.values()]
+}
+
 export async function exportTemplateToPdf({
   template,
   layout,
@@ -111,11 +285,13 @@ export async function exportTemplateToPdf({
   const pdf = await PDFDocument.create()
   const font = await pdf.embedFont(StandardFonts.Helvetica)
   const boldFont = await pdf.embedFont(StandardFonts.HelveticaBold)
-  const firstPage = layout.pages[0]
-  const pageWidthMm = firstPage?.orientation === 'landscape' ? paper.heightMm : paper.widthMm
-  const pageHeightMm = firstPage?.orientation === 'landscape' ? paper.widthMm : paper.heightMm
+  const partsById = new Map(template.parts.map((part) => [part.id, part]))
 
   for (const layoutPage of layout.pages) {
+    const { widthMm: pageWidthMm, heightMm: pageHeightMm } = getOrientedPaperDimensions(
+      paper,
+      layoutPage.orientation,
+    )
     const page = pdf.addPage([mmToPt(pageWidthMm), mmToPt(pageHeightMm)])
     const headerOrigin = toPdfPoint(pageHeightMm, { x: 8, y: 8 })
     page.drawText(template.name, {
@@ -159,34 +335,84 @@ export async function exportTemplateToPdf({
       borderWidth: mmToPt(0.2),
       opacity: 0,
     })
+    page.pushOperators(
+      pushGraphicsState(),
+      rectangle(
+        printableTopLeft.x,
+        printableTopLeft.y - mmToPt(printableBounds.height),
+        mmToPt(printableBounds.width),
+        mmToPt(printableBounds.height),
+      ),
+      clip(),
+      endPath(),
+    )
+
+    for (const region of layoutPage.overlapRegions) {
+      drawOverlapRegion(page, pageHeightMm, region)
+    }
+
+    for (const guide of layoutPage.alignmentGuides) {
+      drawAlignmentGuide(page, pageHeightMm, guide)
+    }
+
+    for (const mark of layoutPage.registrationMarks) {
+      drawRegistrationMark(page, pageHeightMm, mark)
+    }
+
+    for (const label of layoutPage.assemblyLabels) {
+      drawAssemblyLabel(page, pageHeightMm, label, font)
+    }
+
+    for (const indicator of layoutPage.joinIndicators) {
+      drawJoinIndicator(page, pageHeightMm, indicator, font)
+    }
 
     for (const placement of layoutPage.partPlacements) {
-      const placedCutPaths = template.cutPaths.map((path) => ({
+      const part = partsById.get(placement.partId)
+      if (!part) {
+        continue
+      }
+
+      const partTargetIds = new Set([
+        part.id,
+        ...part.panelIds,
+        ...part.cutPathIds,
+        ...part.foldLineIds,
+        ...part.tabIds,
+        ...part.joinEdgeIds,
+      ])
+      const placedCutPaths = template.cutPaths.filter((path) => path.partId === part.id).map((path) => ({
         ...path,
         path: path.path.map((point) => ({
           x: point.x + placement.offsetX,
           y: point.y + placement.offsetY,
         })),
       }))
-      const placedTabs = template.tabs.map((tab) => ({
+      const placedTabs = template.tabs.filter((tab) => tab.partId === part.id).map((tab) => ({
         ...tab,
         outline: tab.outline.map((point) => ({
           x: point.x + placement.offsetX,
           y: point.y + placement.offsetY,
         })),
       }))
-      const placedFoldLines = template.foldLines.map((line) => ({
+      const placedFoldLines = template.foldLines.filter((line) => line.partId === part.id).map((line) => ({
         ...line,
         start: { x: line.start.x + placement.offsetX, y: line.start.y + placement.offsetY },
         end: { x: line.end.x + placement.offsetX, y: line.end.y + placement.offsetY },
       }))
-      const placedAnnotations = template.annotations.map((annotation) => ({
-        ...annotation,
-        position: {
-          x: annotation.position.x + placement.offsetX,
-          y: annotation.position.y + placement.offsetY,
-        },
-      }))
+      const placedAnnotations = template.annotations
+        .filter(
+          (annotation) =>
+            annotation.targetIds.length === 0 ||
+            annotation.targetIds.some((targetId) => partTargetIds.has(targetId)),
+        )
+        .map((annotation) => ({
+          ...annotation,
+          position: {
+            x: annotation.position.x + placement.offsetX,
+            y: annotation.position.y + placement.offsetY,
+          },
+        }))
 
       for (const path of placedCutPaths) {
         drawCutPath(page, pageHeightMm, path)
@@ -213,6 +439,28 @@ export async function exportTemplateToPdf({
     }
 
     drawCalibrationBlock(page, pageHeightMm, font, printableBounds.minX + 8, printableBounds.maxY - 16)
+    page.pushOperators(popGraphicsState())
+  }
+
+  return pdf.save()
+}
+
+export async function exportProjectToPdf(items: ProjectPdfExportItem[]) {
+  const pdf = await PDFDocument.create()
+
+  for (const item of items) {
+    const sourcePdf = await PDFDocument.load(
+      await exportTemplateToPdf({
+        template: item.template,
+        layout: item.layout,
+        paper: item.paper,
+      }),
+    )
+    const sourcePages = await pdf.copyPages(sourcePdf, sourcePdf.getPageIndices())
+
+    for (const page of sourcePages) {
+      pdf.addPage(page)
+    }
   }
 
   return pdf.save()

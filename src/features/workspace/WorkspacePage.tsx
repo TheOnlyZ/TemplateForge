@@ -1,6 +1,12 @@
 import { TemplatePreview } from '../preview/TemplatePreview.tsx'
 import { BoxWizard } from '../wizard/box-wizard/BoxWizard.tsx'
-import { buildPdfFileName, buildSvgFileName, downloadBytes, downloadText } from '../export/download.ts'
+import {
+  buildPdfFileName,
+  buildProjectPdfFileName,
+  buildSvgFileName,
+  downloadBytes,
+  downloadText,
+} from '../export/download.ts'
 import { layoutTemplate } from '../../domain/layout/index.ts'
 import { getMaterialDefinition } from '../../domain/materials/index.ts'
 import { getPaperDefinition, type Orientation, type OrientationPreference } from '../../domain/paper/index.ts'
@@ -37,6 +43,9 @@ function buildDraftPreview(draft: BoxDraft) {
     pageCount: layout.pageCount,
     printableAreaOverflow: layout.printableAreaOverflow,
     hasLegalPlacement: layout.hasLegalPlacement,
+    printableAreaWidthMm: layout.printableArea.width,
+    printableAreaHeightMm: layout.printableArea.height,
+    margins: draft.margins,
   })
   const validation = mergeValidationResults(shapeValidation, layoutValidation)
 
@@ -83,6 +92,9 @@ export function WorkspacePage() {
   const draftMaterial = getMaterialDefinition(draft.materialId)
   const canExportPreviewSvg = !hasBlockingIssues(preview.shapeValidation.messages)
   const canExportPreviewPdf = !hasBlockingIssues(preview.validation.messages)
+  const exportableQueueItems = queueItems
+    .map((item) => ({ item, result: buildDraftPreview(item) }))
+    .filter((entry) => !hasBlockingIssues(entry.result.validation.messages))
 
   async function exportDraftPdf() {
     if (!canExportPreviewPdf) {
@@ -160,6 +172,29 @@ export function WorkspacePage() {
     downloadText(svg, buildSvgFileName(result.template.name), 'image/svg+xml')
   }
 
+  async function exportProjectQueuePdf() {
+    if (exportableQueueItems.length === 0) {
+      return
+    }
+
+    const { exportProjectToPdf } = await import('../../renderers/pdf/index.ts')
+
+    const bytes = await exportProjectToPdf(
+      exportableQueueItems.map(({ item, result }) => ({
+        id: item.id,
+        template: result.template,
+        layout: result.layout,
+        paper: result.paper,
+      })),
+    )
+
+    downloadBytes(
+      bytes,
+      buildProjectPdfFileName('TemplateForge_Project_Queue', exportableQueueItems.length),
+      'application/pdf',
+    )
+  }
+
   return (
     <>
       <header className="app-toolbar">
@@ -190,7 +225,7 @@ export function WorkspacePage() {
             </button>
           </div>
           <p className="toolbar-note">
-            Current slice: box wizard, three box styles, auto-orientation layout, and PDF/SVG export.
+            Current slice: box wizard, three box styles, tiled print layouts with overlap joins, assembly labels, and printer-safe margin validation.
           </p>
         </div>
       </header>
@@ -311,12 +346,28 @@ export function WorkspacePage() {
             <div className="wizard-header">
               <div>
                 <h3>Project Queue</h3>
-                <p>Committed parametric items ready for later grouped exports.</p>
+                <p>Committed parametric items ready for grouped project exports.</p>
               </div>
-              <span className="tag">
-                {queueItems.length} item{queueItems.length === 1 ? '' : 's'}
-              </span>
+              <div className="toolbar-group">
+                <span className="tag">
+                  {queueItems.length} item{queueItems.length === 1 ? '' : 's'}
+                </span>
+                <button
+                  type="button"
+                  className="toolbar-button"
+                  onClick={exportProjectQueuePdf}
+                  disabled={exportableQueueItems.length === 0}
+                >
+                  Export Batch PDF
+                </button>
+              </div>
             </div>
+
+            {queueItems.length > 0 && (
+              <p className="toolbar-note">
+                Batch PDF export combines all export-safe queue items into one printable document.
+              </p>
+            )}
 
             {queueItems.length === 0 ? (
               <div className="queue-empty">
@@ -392,7 +443,7 @@ export function WorkspacePage() {
               {preview.validation.messages.length === 0 ? (
                 <li className="status-item">
                   <span className="status-badge" aria-hidden="true" />
-                  <span>Current draft is valid for the implemented single-page workflow.</span>
+                  <span>Current draft is valid for the implemented print workflow.</span>
                 </li>
               ) : (
                 preview.validation.messages.map((message) => (

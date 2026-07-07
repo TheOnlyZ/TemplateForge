@@ -5,6 +5,11 @@ export type PaperFamily = 'us' | 'international'
 export type Orientation = 'portrait' | 'landscape'
 export type OrientationPreference = Orientation | 'auto'
 
+export interface OrientedPaperDimensions {
+  widthMm: number
+  heightMm: number
+}
+
 export interface PaperDefinition {
   id: PaperSizeId
   family: PaperFamily
@@ -39,6 +44,8 @@ const PAPER_DEFINITIONS: Record<PaperSizeId, PaperDefinition> = {
   a3: { id: 'a3', family: 'international', label: 'A3 (International standard)', widthMm: 297, heightMm: 420 },
 }
 
+const PAPER_SIZE_ORDER: PaperSizeId[] = ['letter', 'legal', 'a4', 'a3']
+
 function clampMargin(value: number) {
   return Math.min(MAX_MARGIN_MM, Math.max(MIN_MARGIN_MM, value))
 }
@@ -52,7 +59,24 @@ export function getPaperDefinition(id: PaperSizeId): PaperDefinition {
 }
 
 export function getPaperSizeOptions(): PaperDefinition[] {
-  return Object.values(PAPER_DEFINITIONS)
+  return PAPER_SIZE_ORDER.map((id) => PAPER_DEFINITIONS[id])
+}
+
+export function getOrientedPaperDimensions(
+  paper: PaperDefinition,
+  orientation: Orientation,
+): OrientedPaperDimensions {
+  if (orientation === 'landscape') {
+    return {
+      widthMm: paper.heightMm,
+      heightMm: paper.widthMm,
+    }
+  }
+
+  return {
+    widthMm: paper.widthMm,
+    heightMm: paper.heightMm,
+  }
 }
 
 export function getDefaultMarginConfig(): MarginConfig {
@@ -79,8 +103,7 @@ export function getPrintableArea(
   margins: MarginConfig,
 ): PrintableArea {
   const clampedMargins = clampMarginConfig(margins)
-  const widthMm = orientation === 'portrait' ? paper.widthMm : paper.heightMm
-  const heightMm = orientation === 'portrait' ? paper.heightMm : paper.widthMm
+  const { widthMm, heightMm } = getOrientedPaperDimensions(paper, orientation)
   const x = clampedMargins.left
   const y = clampedMargins.top
   const width = roundMm(Math.max(0, widthMm - clampedMargins.left - clampedMargins.right))

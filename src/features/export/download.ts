@@ -21,6 +21,10 @@ export function buildPdfFileName(itemName: string, paperSizeId: string) {
   return `${normalizeItemName(itemName)}_${paperSizeId.toUpperCase()}.pdf`
 }
 
+export function buildProjectPdfFileName(projectName: string, itemCount: number) {
+  return `${normalizeItemName(projectName)}_${itemCount}_items.pdf`
+}
+
 export function buildSvgFileName(itemName: string) {
   return `${normalizeItemName(itemName)}.svg`
 }

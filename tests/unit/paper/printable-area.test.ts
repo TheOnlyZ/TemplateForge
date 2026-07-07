@@ -28,4 +28,27 @@ describe('printable area', () => {
       left: 3,
     })
   })
+
+  it('computes the legal printable area in landscape orientation', () => {
+    const printableArea = getPrintableArea(
+      getPaperDefinition('legal'),
+      'landscape',
+      getDefaultMarginConfig(),
+    )
+
+    expect(printableArea.width).toBe(342.9)
+    expect(printableArea.height).toBe(203.2)
+  })
+
+  it('shrinks the printable area when large margins consume more of the sheet', () => {
+    const printableArea = getPrintableArea(getPaperDefinition('letter'), 'portrait', {
+      top: 25.4,
+      right: 25.4,
+      bottom: 25.4,
+      left: 25.4,
+    })
+
+    expect(printableArea.width).toBe(165.1)
+    expect(printableArea.height).toBe(228.6)
+  })
 })

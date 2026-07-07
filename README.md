@@ -4,8 +4,8 @@
 TemplateForge is a browser-based application for building accurate, printable physical templatesTemplateForge is a browser-based parametric template designer that generates true-scale, print-ready PDF templates for boxes, cylinders, and other physical objects, complete with intelligent page tiling and interactive assembly guidance..
 
 ## Why does it exist?
-One day, I really wanted to check if a charger would fit neatly into a small case that I intended to keep cables, port hubs, and the like in.
-Rather than measure out the template painstakingly on paper with a ruler and then cut, I decidded to give a few LLM's a try to see how well they could create accurate, ready-to-print templates.
+One day, I wanted to check if a charger would fit neatly into a small case that I intended to keep cables, port hubs, and the like in.
+Rather than painstakingly measure out the template on paper with a ruler and then cut, I thought to give a few LLM's a try to see how well they could create accurate, ready-to-print templates.
 Alas, they failed in various ways, and this spurred me to create a simple web application that can achieve that end with a few additional features.
 
 ## Key features
@@ -48,7 +48,7 @@ npm run build
 
 ## Current Focus
 
-The current implementation now covers the first rectangular-box vertical slice. The next active build slice is Phase 3: smarter layout behavior and expanded shapes, continuing from automatic page orientation selection into cylinder generation and broader layout optimization.
+The current implementation now covers the first rectangular-box vertical slice plus project-level queueing with grouped batch PDF export. The next active build slice is Phase 5: optimized page nesting and durable project persistence.
 
 ## Roadmap
 
@@ -66,23 +66,23 @@ The current implementation now covers the first rectangular-box vertical slice. 
 - [x] True-scale vector PDF export
 - [x] Print calibration rulers and scale verification
 
-### Phase 3 — Advanced Template Generation *(In Progress)*
-- [ ] Cylinder template generator
-- [ ] Automatic glue tabs and alignment tabs
-- [ ] Intelligent layout optimization
-- [ ] Letter and Legal paper support
+### Phase 3 — Advanced Template Generation ✅
+- [x] Cylinder template generator
+- [x] Automatic glue tabs and alignment tabs
+- [x] Intelligent layout optimization
+- [x] Letter and Legal paper support
 - [x] Automatic page orientation selection
 
-### Phase 4 — Multi-Page Intelligence
-- [ ] Intelligent template tiling
-- [ ] Registration marks and alignment guides
-- [ ] Multi-page assembly labels
-- [ ] Join indicators and overlap regions
-- [ ] Printer-safe margin validation
+### Phase 4 — Multi-Page Intelligence ✅
+- [x] Intelligent template tiling
+- [x] Registration marks and alignment guides
+- [x] Multi-page assembly labels
+- [x] Join indicators and overlap regions
+- [x] Printer-safe margin validation
 
 ### Phase 5 — Project Workspace
-- [ ] Queue multiple shapes into a single project
-- [ ] Batch PDF generation
+- [x] Queue multiple shapes into a single project
+- [x] Batch PDF generation
 - [ ] Optimized page nesting to reduce paper usage
 - [ ] Save and reopen projects
 - [ ] Shape duplication and editing
