@@ -51,8 +51,10 @@ export function BoxWizard({
 }: BoxWizardProps) {
   const {
     addDraftToQueue,
+    cancelEditingQueueItem,
     draft,
     draftStep,
+    editingQueueItemId,
     nextDraftStep,
     previousDraftStep,
     setDraftDimension,
@@ -67,6 +69,7 @@ export function BoxWizard({
 
   const stepIndex = steps.findIndex((step) => step.id === draftStep)
   const activeMaterial = getMaterialDefinition(draft.materialId)
+  const isEditingQueueItem = editingQueueItemId !== null
 
   return (
     <article className="panel-card wizard-card">
@@ -321,22 +324,38 @@ export function BoxWizard({
       {draftStep === 'queue' && (
         <div className="wizard-section">
           <p>
-            Save the current parametric box to the project queue. The queue stores the shape
-            parameters, material choice, and paper settings for later project exports.
+            {isEditingQueueItem
+              ? 'Update the selected queued box using the current wizard parameters, material choice, and paper settings.'
+              : 'Save the current parametric box to the project queue. The queue stores the shape parameters, material choice, and paper settings for later project exports.'}
           </p>
           <div className="wizard-actions-inline">
-            <button
-              type="button"
-              className="toolbar-button"
-              onClick={() => addDraftToQueue()}
-              disabled={!canExportPreviewPdf}
-            >
-              Add to Queue
-            </button>
+            <div className="toolbar-group">
+              <button
+                type="button"
+                className="toolbar-button"
+                onClick={() => addDraftToQueue()}
+                disabled={!canExportPreviewPdf}
+              >
+                {isEditingQueueItem ? 'Save Changes' : 'Add to Queue'}
+              </button>
+              {isEditingQueueItem && (
+                <button
+                  type="button"
+                  className="toolbar-button toolbar-button--ghost"
+                  onClick={() => cancelEditingQueueItem()}
+                >
+                  Cancel Edit
+                </button>
+              )}
+            </div>
             <p className="toolbar-note">
               {canExportPreviewPdf
-                ? 'This item is ready to commit to the queue.'
-                : 'Queue add is blocked until the preview is export-safe.'}
+                ? isEditingQueueItem
+                  ? 'This queued item is ready to be updated.'
+                  : 'This item is ready to commit to the queue.'
+                : isEditingQueueItem
+                  ? 'Queue edits are blocked until the preview is export-safe.'
+                  : 'Queue add is blocked until the preview is export-safe.'}
             </p>
           </div>
         </div>

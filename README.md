@@ -1,7 +1,7 @@
 # TemplateForge
 
 ## What is TemplateForge?
-TemplateForge is a browser-based application for building accurate, printable physical templatesTemplateForge is a browser-based parametric template designer that generates true-scale, print-ready PDF templates for boxes, cylinders, and other physical objects, complete with intelligent page tiling and interactive assembly guidance..
+TemplateForge is a browser-based parametric template designer that generates true-scale, print-ready PDF templates for boxes, cylinders, and other physical objects, complete with intelligent page tiling and interactive assembly guidance..
 
 ## Why does it exist?
 One day, I wanted to check if a charger would fit neatly into a small case that I intended to keep cables, port hubs, and the like in.
@@ -28,7 +28,7 @@ Alas, they failed in various ways, and this spurred me to create a simple web ap
 
 
 
-This repository is currently in the foundation phase. The first implemented package establishes:
+This repository is now beyond the foundation phase. The current implementation establishes:
 
 - a strict React + TypeScript + Vite app shell
 - unit conversion and print-tolerance rules
@@ -36,6 +36,10 @@ This repository is currently in the foundation phase. The first implemented pack
 - a shape-agnostic template model
 - validation rules for MVP constraints
 - paper definitions and printable-area calculations
+- rectangular box generation, preview, and export
+- cylinder generation with seam and alignment guidance
+- tiled multi-page layout with registration and assembly aids
+- project queueing, batch export, nesting, save/reopen, duplication, and editing
 
 ## Commands
 
@@ -48,7 +52,7 @@ npm run build
 
 ## Current Focus
 
-The current implementation now covers the first rectangular-box vertical slice plus project-level queueing with grouped batch PDF export. The next active build slice is Phase 5: optimized page nesting and durable project persistence.
+The current implementation now covers Phases 1 through 5. The next active build slice is Phase 6: interactive assembly workflows, starting with a first 3D assembly view.
 
 ## Roadmap
 
@@ -80,12 +84,12 @@ The current implementation now covers the first rectangular-box vertical slice p
 - [x] Join indicators and overlap regions
 - [x] Printer-safe margin validation
 
-### Phase 5 — Project Workspace
+### Phase 5 — Project Workspace ✅
 - [x] Queue multiple shapes into a single project
 - [x] Batch PDF generation
-- [ ] Optimized page nesting to reduce paper usage
-- [ ] Save and reopen projects
-- [ ] Shape duplication and editing
+- [x] Optimized page nesting to reduce paper usage
+- [x] Save and reopen projects
+- [x] Shape duplication and editing
 
 ### Phase 6 — Interactive Assembly
 - [ ] 3D Assembly View
@@ -104,7 +108,7 @@ The current implementation now covers the first rectangular-box vertical slice p
 ### Future Vision
 - [ ] Material thickness compensation
 - [ ] Laser cutter (DXF) export
-- [ ] SVG export
+- [x] SVG export
 - [ ] Custom paper sizes
 - [ ] User-created template library
 - [ ] Plugin architecture for custom shapes

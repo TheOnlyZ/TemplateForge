@@ -1,12 +1,19 @@
+import { type ChangeEvent, useRef } from 'react'
 import { TemplatePreview } from '../preview/TemplatePreview.tsx'
 import { BoxWizard } from '../wizard/box-wizard/BoxWizard.tsx'
 import {
   buildPdfFileName,
   buildProjectPdfFileName,
+  buildProjectStateFileName,
   buildSvgFileName,
   downloadBytes,
   downloadText,
 } from '../export/download.ts'
+import {
+  createProjectFileContents,
+  getDefaultProjectName,
+  parseProjectFileContents,
+} from '../project/persistence.ts'
 import { layoutTemplate } from '../../domain/layout/index.ts'
 import { getMaterialDefinition } from '../../domain/materials/index.ts'
 import { getPaperDefinition, type Orientation, type OrientationPreference } from '../../domain/paper/index.ts'
@@ -22,10 +29,10 @@ import {
 } from '../../domain/validation/index.ts'
 import { type BoxDraft, useAppStore } from '../../store/app-store.ts'
 
-function buildDraftPreview(draft: BoxDraft) {
+function buildDraftPreview(draft: BoxDraft, templateId = `preview-${draft.boxInput.style}`) {
   const paper = getPaperDefinition(draft.paperSizeId)
   const { template } = generateBoxTemplate(draft.boxInput, {
-    itemId: `preview-${draft.boxInput.style}`,
+    itemId: templateId,
     itemName: draft.name,
   })
   const layout = layoutTemplate(template, paper, draft.orientation, draft.margins)
@@ -86,14 +93,29 @@ function hasBlockingIssues(messages: ReturnType<typeof buildDraftPreview>['valid
 }
 
 export function WorkspacePage() {
-  const { draft, queueItems, removeQueueItem, setUnitSystem, unitSystem } = useAppStore()
-  const preview = buildDraftPreview(draft)
+  const {
+    draft,
+    duplicateQueueItem,
+    editingQueueItemId,
+    loadProjectSnapshot,
+    queueItems,
+    removeQueueItem,
+    setUnitSystem,
+    startEditingQueueItem,
+    unitSystem,
+  } = useAppStore()
+  const preview = buildDraftPreview(draft, 'preview-draft')
   const primaryPart = preview.template.parts[0]!
   const draftMaterial = getMaterialDefinition(draft.materialId)
   const canExportPreviewSvg = !hasBlockingIssues(preview.shapeValidation.messages)
   const canExportPreviewPdf = !hasBlockingIssues(preview.validation.messages)
+  const projectFileInputRef = useRef<HTMLInputElement | null>(null)
+  const editingQueueItem =
+    editingQueueItemId === null
+      ? null
+      : queueItems.find((item) => item.id === editingQueueItemId) ?? null
   const exportableQueueItems = queueItems
-    .map((item) => ({ item, result: buildDraftPreview(item) }))
+    .map((item) => ({ item, result: buildDraftPreview(item, item.id) }))
     .filter((entry) => !hasBlockingIssues(entry.result.validation.messages))
 
   async function exportDraftPdf() {
@@ -134,7 +156,7 @@ export function WorkspacePage() {
       return
     }
 
-    const result = buildDraftPreview(item)
+    const result = buildDraftPreview(item, item.id)
     if (hasBlockingIssues(result.validation.messages)) {
       return
     }
@@ -160,7 +182,7 @@ export function WorkspacePage() {
       return
     }
 
-    const result = buildDraftPreview(item)
+    const result = buildDraftPreview(item, item.id)
     if (hasBlockingIssues(result.shapeValidation.messages)) {
       return
     }
@@ -185,6 +207,8 @@ export function WorkspacePage() {
         template: result.template,
         layout: result.layout,
         paper: result.paper,
+        orientation: item.orientation,
+        margins: item.margins,
       })),
     )
 
@@ -195,8 +219,46 @@ export function WorkspacePage() {
     )
   }
 
+  function saveProjectFile() {
+    const snapshot = useAppStore.getState()
+    const projectName = getDefaultProjectName(snapshot)
+
+    downloadText(
+      createProjectFileContents(snapshot, projectName),
+      buildProjectStateFileName(projectName),
+      'application/json',
+    )
+  }
+
+  function openProjectFile() {
+    projectFileInputRef.current?.click()
+  }
+
+  async function handleProjectFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+
+    if (!file) {
+      return
+    }
+
+    try {
+      const snapshot = parseProjectFileContents(await file.text())
+      loadProjectSnapshot(snapshot)
+    } catch {
+      window.alert('Could not open this project file. Make sure it is a valid TemplateForge project export.')
+    }
+  }
+
   return (
     <>
+      <input
+        ref={projectFileInputRef}
+        type="file"
+        accept="application/json,.json,.templateforge.json"
+        hidden
+        onChange={handleProjectFileChange}
+      />
       <header className="app-toolbar">
         <div className="toolbar-title">
           <h1>TemplateForge</h1>
@@ -224,8 +286,16 @@ export function WorkspacePage() {
               Imperial
             </button>
           </div>
+          <div className="toolbar-group" aria-label="Project file actions">
+            <button type="button" className="toolbar-button" onClick={saveProjectFile}>
+              Save Project
+            </button>
+            <button type="button" className="toolbar-button" onClick={openProjectFile}>
+              Open Project
+            </button>
+          </div>
           <p className="toolbar-note">
-            Current slice: box wizard, three box styles, tiled print layouts with overlap joins, assembly labels, and printer-safe margin validation.
+            Current slice: project save/reopen, queue editing and duplication, grouped exports, and tiled print layouts with assembly guidance.
           </p>
         </div>
       </header>
@@ -346,7 +416,7 @@ export function WorkspacePage() {
             <div className="wizard-header">
               <div>
                 <h3>Project Queue</h3>
-                <p>Committed parametric items ready for grouped project exports.</p>
+                <p>Committed parametric items ready for editing, duplication, and grouped project exports.</p>
               </div>
               <div className="toolbar-group">
                 <span className="tag">
@@ -364,9 +434,16 @@ export function WorkspacePage() {
             </div>
 
             {queueItems.length > 0 && (
-              <p className="toolbar-note">
-                Batch PDF export combines all export-safe queue items into one printable document.
-              </p>
+              <>
+                <p className="toolbar-note">
+                  Batch PDF export combines all export-safe queue items into one printable document.
+                </p>
+                {editingQueueItem && (
+                  <p className="toolbar-note">
+                    Editing <strong>{editingQueueItem.name}</strong> in the wizard. Save changes or cancel edit before switching away.
+                  </p>
+                )}
+              </>
             )}
 
             {queueItems.length === 0 ? (
@@ -380,7 +457,7 @@ export function WorkspacePage() {
             ) : (
               <ul className="queue-list">
                 {queueItems.map((item) => {
-                  const itemResult = buildDraftPreview(item)
+                  const itemResult = buildDraftPreview(item, item.id)
                   const itemMaterial = getMaterialDefinition(item.materialId)
                   const itemPart = itemResult.template.parts[0]!
                   const canExportItemSvg = !hasBlockingIssues(itemResult.shapeValidation.messages)
@@ -404,7 +481,7 @@ export function WorkspacePage() {
                         <span>{formatLength(itemPart.bounds.width, unitSystem)} part width</span>
                       </div>
                       <div className="wizard-actions-inline queue-actions-inline">
-                        <div className="toolbar-group">
+                        <div className="toolbar-group queue-actions-group">
                           <button
                             type="button"
                             className="toolbar-button"
@@ -420,6 +497,21 @@ export function WorkspacePage() {
                             disabled={!canExportItemSvg}
                           >
                             Export SVG
+                          </button>
+                          <button
+                            type="button"
+                            className="toolbar-button"
+                            onClick={() => startEditingQueueItem(item.id)}
+                            disabled={editingQueueItemId === item.id}
+                          >
+                            {editingQueueItemId === item.id ? 'Editing' : 'Edit'}
+                          </button>
+                          <button
+                            type="button"
+                            className="toolbar-button"
+                            onClick={() => duplicateQueueItem(item.id)}
+                          >
+                            Duplicate
                           </button>
                           <button
                             type="button"

@@ -25,6 +25,10 @@ export function buildProjectPdfFileName(projectName: string, itemCount: number) 
   return `${normalizeItemName(projectName)}_${itemCount}_items.pdf`
 }
 
+export function buildProjectStateFileName(projectName: string) {
+  return `${normalizeItemName(projectName)}.templateforge.json`
+}
+
 export function buildSvgFileName(itemName: string) {
   return `${normalizeItemName(itemName)}.svg`
 }

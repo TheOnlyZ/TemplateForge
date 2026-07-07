@@ -153,15 +153,15 @@ describe('exportTemplateToPdf', () => {
     expect(pdf.getPageCount()).toBe(4)
   })
 
-  it('combines multiple queued template exports into a single batch PDF', async () => {
-    const firstPaper = getPaperDefinition('a4')
-    const secondPaper = getPaperDefinition('letter')
+  it('nests compatible queued items onto shared pages during batch export', async () => {
+    const paper = getPaperDefinition('a4')
+    const margins = getDefaultMarginConfig()
     const { template: firstTemplate } = generateBoxTemplate(
       {
-        externalLengthMm: 100,
-        externalWidthMm: 70,
-        externalHeightMm: 20,
-        glueTabWidthMm: 12,
+        externalLengthMm: 80,
+        externalWidthMm: 50,
+        externalHeightMm: 16,
+        glueTabWidthMm: 10,
         style: 'open-tray',
       },
       {
@@ -169,35 +169,42 @@ describe('exportTemplateToPdf', () => {
         itemName: 'Batch Box 1',
       },
     )
-    const { template: secondTemplate } = generateCylinderTemplate(
+    const { template: secondTemplate } = generateBoxTemplate(
       {
-        diameterMm: 60,
-        heightMm: 100,
+        externalLengthMm: 90,
+        externalWidthMm: 60,
+        externalHeightMm: 18,
+        glueTabWidthMm: 10,
+        style: 'open-tray',
       },
       {
-        itemId: 'batch-cylinder-1',
-        itemName: 'Batch Cylinder 1',
+        itemId: 'batch-box-2',
+        itemName: 'Batch Box 2',
       },
     )
-    const firstLayout = layoutTemplate(firstTemplate, firstPaper, 'auto', getDefaultMarginConfig())
-    const secondLayout = layoutTemplate(secondTemplate, secondPaper, 'auto', getDefaultMarginConfig())
+    const firstLayout = layoutTemplate(firstTemplate, paper, 'auto', margins)
+    const secondLayout = layoutTemplate(secondTemplate, paper, 'auto', margins)
 
     const bytes = await exportProjectToPdf([
       {
         id: 'queue-item-1',
         template: firstTemplate,
         layout: firstLayout,
-        paper: firstPaper,
+        paper,
+        orientation: 'auto',
+        margins,
       },
       {
         id: 'queue-item-2',
         template: secondTemplate,
         layout: secondLayout,
-        paper: secondPaper,
+        paper,
+        orientation: 'auto',
+        margins,
       },
     ])
     const pdf = await PDFDocument.load(bytes)
 
-    expect(pdf.getPageCount()).toBe(firstLayout.pageCount + secondLayout.pageCount)
+    expect(pdf.getPageCount()).toBeLessThan(firstLayout.pageCount + secondLayout.pageCount)
   })
 })

@@ -31,6 +31,15 @@ export interface BoxQueueItem extends BoxDraft {
   id: string
 }
 
+export interface ProjectStateSnapshot {
+  unitSystem: UnitSystem
+  draft: BoxDraft
+  draftStep: BoxWizardStepId
+  queueItems: BoxQueueItem[]
+  nextQueueIndex: number
+  editingQueueItemId: string | null
+}
+
 const wizardSteps: BoxWizardStepId[] = [
   'dimensions',
   'style',
@@ -57,12 +66,39 @@ function createDefaultDraft(index: number): BoxDraft {
   }
 }
 
+function cloneDraft(draft: BoxDraft): BoxDraft {
+  return {
+    ...draft,
+    margins: { ...draft.margins },
+    boxInput: { ...draft.boxInput },
+  }
+}
+
+function cloneQueueItem(item: BoxQueueItem): BoxQueueItem {
+  return {
+    ...cloneDraft(item),
+    id: item.id,
+  }
+}
+
+export function createDefaultProjectState(): ProjectStateSnapshot {
+  return {
+    unitSystem: 'metric',
+    draft: createDefaultDraft(1),
+    draftStep: 'dimensions',
+    queueItems: [],
+    nextQueueIndex: 1,
+    editingQueueItemId: null,
+  }
+}
+
 interface AppState {
   unitSystem: UnitSystem
   draft: BoxDraft
   draftStep: BoxWizardStepId
   queueItems: BoxQueueItem[]
   nextQueueIndex: number
+  editingQueueItemId: string | null
   setUnitSystem: (unitSystem: UnitSystem) => void
   setDraftName: (name: string) => void
   setDraftStyle: (style: BoxStyle) => void
@@ -76,14 +112,14 @@ interface AppState {
   previousDraftStep: () => void
   addDraftToQueue: () => void
   removeQueueItem: (id: string) => void
+  duplicateQueueItem: (id: string) => void
+  startEditingQueueItem: (id: string) => void
+  cancelEditingQueueItem: () => void
+  loadProjectSnapshot: (snapshot: ProjectStateSnapshot) => void
 }
 
 export const useAppStore = create<AppState>((set) => ({
-  unitSystem: 'metric',
-  draft: createDefaultDraft(1),
-  draftStep: 'dimensions',
-  queueItems: [],
-  nextQueueIndex: 1,
+  ...createDefaultProjectState(),
   setUnitSystem: (unitSystem) => set({ unitSystem }),
   setDraftName: (name) =>
     set((state) => ({
@@ -162,6 +198,22 @@ export const useAppStore = create<AppState>((set) => ({
     }),
   addDraftToQueue: () =>
     set((state) => {
+      if (state.editingQueueItemId !== null) {
+        return {
+          queueItems: state.queueItems.map((item) =>
+            item.id === state.editingQueueItemId
+              ? {
+                  ...item,
+                  ...cloneDraft(state.draft),
+                }
+              : item,
+          ),
+          draft: createDefaultDraft(state.nextQueueIndex),
+          draftStep: 'dimensions',
+          editingQueueItemId: null,
+        }
+      }
+
       const nextIndex = state.nextQueueIndex + 1
 
       return {
@@ -177,10 +229,69 @@ export const useAppStore = create<AppState>((set) => ({
         nextQueueIndex: nextIndex,
         draft: createDefaultDraft(nextIndex),
         draftStep: 'dimensions',
+        editingQueueItemId: null,
       }
     }),
   removeQueueItem: (id) =>
+    set((state) =>
+      state.editingQueueItemId === id
+        ? {
+            queueItems: state.queueItems.filter((item) => item.id !== id),
+            draft: createDefaultDraft(state.nextQueueIndex),
+            draftStep: 'dimensions',
+            editingQueueItemId: null,
+          }
+        : {
+            queueItems: state.queueItems.filter((item) => item.id !== id),
+          },
+    ),
+  duplicateQueueItem: (id) =>
+    set((state) => {
+      const sourceItem = state.queueItems.find((item) => item.id === id)
+      if (!sourceItem) {
+        return {}
+      }
+
+      return {
+        queueItems: [
+          {
+            ...cloneDraft(sourceItem),
+            id: `queue-item-${state.nextQueueIndex}`,
+            name: `${sourceItem.name} Copy`,
+          },
+          ...state.queueItems,
+        ],
+        nextQueueIndex: state.nextQueueIndex + 1,
+      }
+    }),
+  startEditingQueueItem: (id) =>
+    set((state) => {
+      const sourceItem = state.queueItems.find((item) => item.id === id)
+      if (!sourceItem) {
+        return {}
+      }
+
+      return {
+        draft: cloneDraft(sourceItem),
+        draftStep: 'dimensions',
+        editingQueueItemId: sourceItem.id,
+      }
+    }),
+  cancelEditingQueueItem: () =>
     set((state) => ({
-      queueItems: state.queueItems.filter((item) => item.id !== id),
+      draft: createDefaultDraft(state.nextQueueIndex),
+      draftStep: 'dimensions',
+      editingQueueItemId: null,
     })),
+  loadProjectSnapshot: (snapshot) =>
+    set({
+      unitSystem: snapshot.unitSystem,
+      draft: cloneDraft(snapshot.draft),
+      draftStep: snapshot.draftStep,
+      queueItems: snapshot.queueItems.map(cloneQueueItem),
+      nextQueueIndex: snapshot.nextQueueIndex,
+      editingQueueItemId: snapshot.queueItems.some((item) => item.id === snapshot.editingQueueItemId)
+        ? snapshot.editingQueueItemId
+        : null,
+    }),
 }))

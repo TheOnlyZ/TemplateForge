@@ -11,8 +11,8 @@ import {
   rgb,
 } from 'pdf-lib'
 import type { Point } from '../../domain/geometry/index.ts'
-import {
-  layoutTemplate,
+import { layoutTemplate } from '../../domain/layout/index.ts'
+import type {
   LayoutAssemblyLabel,
   LayoutAlignmentGuide,
   LayoutJoinIndicator,
@@ -448,12 +448,19 @@ export async function exportTemplateToPdf({
 export async function exportProjectToPdf(items: ProjectPdfExportItem[]) {
   const pdf = await PDFDocument.create()
 
-  for (const item of items) {
+  for (const groupItems of groupProjectPdfItems(items)) {
+    const firstItem = groupItems[0]!
+    const sourceTemplate =
+      groupItems.length === 1 ? firstItem.template : mergeProjectGroupTemplates(groupItems)
+    const sourceLayout =
+      groupItems.length === 1
+        ? firstItem.layout
+        : layoutTemplate(sourceTemplate, firstItem.paper, firstItem.orientation, firstItem.margins)
     const sourcePdf = await PDFDocument.load(
       await exportTemplateToPdf({
-        template: item.template,
-        layout: item.layout,
-        paper: item.paper,
+        template: sourceTemplate,
+        layout: sourceLayout,
+        paper: firstItem.paper,
       }),
     )
     const sourcePages = await pdf.copyPages(sourcePdf, sourcePdf.getPageIndices())
