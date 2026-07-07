@@ -3,6 +3,7 @@ import type { Bounds } from '../geometry/index.ts'
 export type PaperSizeId = 'letter' | 'legal' | 'a4' | 'a3'
 export type PaperFamily = 'us' | 'international'
 export type Orientation = 'portrait' | 'landscape'
+export type OrientationPreference = Orientation | 'auto'
 
 export interface PaperDefinition {
   id: PaperSizeId

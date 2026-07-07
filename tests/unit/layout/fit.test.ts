@@ -46,4 +46,26 @@ describe('layoutTemplate', () => {
     expect(result.hasLegalPlacement).toBe(false)
     expect(result.printableAreaOverflow).toBe(true)
   })
+
+  it('automatically selects landscape when portrait would overflow', () => {
+    const { template } = generateBoxTemplate(
+      {
+        externalLengthMm: 150,
+        externalWidthMm: 95,
+        externalHeightMm: 28,
+        glueTabWidthMm: 12,
+        style: 'open-tray',
+      },
+      {
+        itemId: 'layout-auto-landscape',
+        itemName: 'Layout Auto Landscape',
+      },
+    )
+
+    const result = layoutTemplate(template, getPaperDefinition('a4'), 'auto', getDefaultMarginConfig())
+
+    expect(result.hasLegalPlacement).toBe(true)
+    expect(result.pageCount).toBe(1)
+    expect(result.pages[0]?.orientation).toBe('landscape')
+  })
 })

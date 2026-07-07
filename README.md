@@ -48,30 +48,30 @@ npm run build
 
 ## Current Focus
 
-The current implementation intentionally prioritizes domain correctness over feature breadth. The next major build slice is the first real shape vertical: rectangular boxes, live SVG preview, and true-scale vector export.
+The current implementation now covers the first rectangular-box vertical slice. The next active build slice is Phase 3: smarter layout behavior and expanded shapes, continuing from automatic page orientation selection into cylinder generation and broader layout optimization.
 
 ## Roadmap
 
-### Phase 1 — Foundation ✅ *(In Progress)*
+### Phase 1 — Foundation ✅
 - [x] React + TypeScript + Vite project setup
 - [x] Shape-agnostic geometry architecture
 - [x] Unit conversion and print-tolerance rules
 - [x] Paper definitions and printable-area calculations
 - [x] Validation framework for template constraints
 
-### Phase 2 — First Shape Support
-- [ ] Parametric rectangular box generator
-- [ ] Glue-tab, tuck-carton, and tray box styles
-- [ ] Live SVG template preview
-- [ ] True-scale vector PDF export
-- [ ] Print calibration rulers and scale verification
+### Phase 2 — First Shape Support ✅
+- [x] Parametric rectangular box generator
+- [x] Glue-tab, tuck-carton, and tray box styles
+- [x] Live SVG template preview
+- [x] True-scale vector PDF export
+- [x] Print calibration rulers and scale verification
 
-### Phase 3 — Advanced Template Generation
+### Phase 3 — Advanced Template Generation *(In Progress)*
 - [ ] Cylinder template generator
 - [ ] Automatic glue tabs and alignment tabs
 - [ ] Intelligent layout optimization
 - [ ] Letter and Legal paper support
-- [ ] Automatic page orientation selection
+- [x] Automatic page orientation selection
 
 ### Phase 4 — Multi-Page Intelligence
 - [ ] Intelligent template tiling

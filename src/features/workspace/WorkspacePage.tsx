@@ -1,9 +1,9 @@
 import { TemplatePreview } from '../preview/TemplatePreview.tsx'
 import { BoxWizard } from '../wizard/box-wizard/BoxWizard.tsx'
-import { buildPdfFileName, downloadBytes } from '../export/download.ts'
+import { buildPdfFileName, buildSvgFileName, downloadBytes, downloadText } from '../export/download.ts'
 import { layoutTemplate } from '../../domain/layout/index.ts'
 import { getMaterialDefinition } from '../../domain/materials/index.ts'
-import { getPaperDefinition } from '../../domain/paper/index.ts'
+import { getPaperDefinition, type Orientation, type OrientationPreference } from '../../domain/paper/index.ts'
 import { generateBoxTemplate } from '../../domain/shapes/box/index.ts'
 import { formatLength } from '../../domain/units/index.ts'
 import {
@@ -23,24 +23,24 @@ function buildDraftPreview(draft: BoxDraft) {
     itemName: draft.name,
   })
   const layout = layoutTemplate(template, paper, draft.orientation, draft.margins)
-  const validation = mergeValidationResults(
-    validateTemplateInput({
-      dimensionsMm: {
-        length: draft.boxInput.externalLengthMm,
-        width: draft.boxInput.externalWidthMm,
-        height: draft.boxInput.externalHeightMm,
-        glueTabWidth: draft.boxInput.glueTabWidthMm,
-      },
-    }),
-    validateTemplateGeometry(template),
-    validateLayoutResult({
-      pageCount: layout.pageCount,
-      printableAreaOverflow: layout.printableAreaOverflow,
-      hasLegalPlacement: layout.hasLegalPlacement,
-    }),
-  )
+  const inputValidation = validateTemplateInput({
+    dimensionsMm: {
+      length: draft.boxInput.externalLengthMm,
+      width: draft.boxInput.externalWidthMm,
+      height: draft.boxInput.externalHeightMm,
+      glueTabWidth: draft.boxInput.glueTabWidthMm,
+    },
+  })
+  const geometryValidation = validateTemplateGeometry(template)
+  const shapeValidation = mergeValidationResults(inputValidation, geometryValidation)
+  const layoutValidation = validateLayoutResult({
+    pageCount: layout.pageCount,
+    printableAreaOverflow: layout.printableAreaOverflow,
+    hasLegalPlacement: layout.hasLegalPlacement,
+  })
+  const validation = mergeValidationResults(shapeValidation, layoutValidation)
 
-  return { paper, template, layout, validation }
+  return { paper, template, layout, shapeValidation, validation }
 }
 
 function getStyleLabel(style: string) {
@@ -55,6 +55,23 @@ function getStyleLabel(style: string) {
   return 'Tuck Carton'
 }
 
+function getOrientationLabel(orientation: Orientation) {
+  return orientation === 'portrait' ? 'Portrait' : 'Landscape'
+}
+
+function getOrientationStrategyLabel(
+  orientation: OrientationPreference,
+  layout: ReturnType<typeof buildDraftPreview>['layout'],
+) {
+  if (orientation !== 'auto') {
+    return getOrientationLabel(orientation)
+  }
+
+  const resolvedOrientation = layout.pages[0]?.orientation
+
+  return resolvedOrientation === undefined ? 'Auto' : `Auto -> ${getOrientationLabel(resolvedOrientation)}`
+}
+
 function hasBlockingIssues(messages: ReturnType<typeof buildDraftPreview>['validation']['messages']) {
   return messages.some((message) => message.severity === 'error')
 }
@@ -64,9 +81,11 @@ export function WorkspacePage() {
   const preview = buildDraftPreview(draft)
   const primaryPart = preview.template.parts[0]!
   const draftMaterial = getMaterialDefinition(draft.materialId)
+  const canExportPreviewSvg = !hasBlockingIssues(preview.shapeValidation.messages)
+  const canExportPreviewPdf = !hasBlockingIssues(preview.validation.messages)
 
   async function exportDraftPdf() {
-    if (!preview.layout.hasLegalPlacement || hasBlockingIssues(preview.validation.messages)) {
+    if (!canExportPreviewPdf) {
       return
     }
 
@@ -85,6 +104,18 @@ export function WorkspacePage() {
     )
   }
 
+  async function exportDraftSvg() {
+    if (!canExportPreviewSvg) {
+      return
+    }
+
+    const { exportTemplateToSvg } = await import('../../renderers/svg-export/index.ts')
+
+    const svg = exportTemplateToSvg(preview.template)
+
+    downloadText(svg, buildSvgFileName(preview.template.name), 'image/svg+xml')
+  }
+
   async function exportQueueItemPdf(itemId: string) {
     const item = queueItems.find((candidate) => candidate.id === itemId)
     if (!item) {
@@ -92,7 +123,7 @@ export function WorkspacePage() {
     }
 
     const result = buildDraftPreview(item)
-    if (!result.layout.hasLegalPlacement || hasBlockingIssues(result.validation.messages)) {
+    if (hasBlockingIssues(result.validation.messages)) {
       return
     }
 
@@ -109,6 +140,24 @@ export function WorkspacePage() {
       buildPdfFileName(result.template.name, item.paperSizeId),
       'application/pdf',
     )
+  }
+
+  async function exportQueueItemSvg(itemId: string) {
+    const item = queueItems.find((candidate) => candidate.id === itemId)
+    if (!item) {
+      return
+    }
+
+    const result = buildDraftPreview(item)
+    if (hasBlockingIssues(result.shapeValidation.messages)) {
+      return
+    }
+
+    const { exportTemplateToSvg } = await import('../../renderers/svg-export/index.ts')
+
+    const svg = exportTemplateToSvg(result.template)
+
+    downloadText(svg, buildSvgFileName(result.template.name), 'image/svg+xml')
   }
 
   return (
@@ -141,7 +190,7 @@ export function WorkspacePage() {
             </button>
           </div>
           <p className="toolbar-note">
-            Current slice: box wizard, three box styles, single-page layout, and PDF export.
+            Current slice: box wizard, three box styles, auto-orientation layout, and PDF/SVG export.
           </p>
         </div>
       </header>
@@ -154,7 +203,7 @@ export function WorkspacePage() {
               <p>
                 The wizard now feeds a shared geometry pipeline for <code>Open Tray</code>,{' '}
                 <code>Glue Tab Carton</code>, and <code>Tuck Carton</code>. The same canonical
-                model drives the SVG preview and the first PDF export path.
+                model drives the SVG preview plus PDF and SVG export paths.
               </p>
               <div className="hero-stats">
                 <div className="summary-item">
@@ -172,7 +221,7 @@ export function WorkspacePage() {
                   <strong>{preview.paper.label}</strong>
                   <p>
                     {preview.layout.hasLegalPlacement
-                      ? 'Fits current printable area.'
+                      ? `Fits current printable area with ${getOrientationStrategyLabel(draft.orientation, preview.layout)}.`
                       : 'Does not fit current printable area.'}
                   </p>
                 </div>
@@ -207,7 +256,7 @@ export function WorkspacePage() {
                 <h3>Live Template Preview</h3>
                 <p>
                   Generated from canonical template data. This is the same model the layout engine
-                  and PDF renderer consume.
+                  plus the PDF and SVG renderers consume.
                 </p>
               </div>
               <TemplatePreview template={preview.template} />
@@ -252,9 +301,10 @@ export function WorkspacePage() {
           <BoxWizard
             unitSystem={unitSystem}
             previewTemplate={preview.template}
-            validationMessages={preview.validation.messages}
-            previewFitsCurrentPaper={preview.layout.hasLegalPlacement}
+            canExportPreviewPdf={canExportPreviewPdf}
+            canExportPreviewSvg={canExportPreviewSvg}
             onExportPreviewPdf={exportDraftPdf}
+            onExportPreviewSvg={exportDraftSvg}
           />
 
           <article className="queue-card">
@@ -282,6 +332,8 @@ export function WorkspacePage() {
                   const itemResult = buildDraftPreview(item)
                   const itemMaterial = getMaterialDefinition(item.materialId)
                   const itemPart = itemResult.template.parts[0]!
+                  const canExportItemSvg = !hasBlockingIssues(itemResult.shapeValidation.messages)
+                  const canExportItemPdf = !hasBlockingIssues(itemResult.validation.messages)
 
                   return (
                     <li key={item.id} className="queue-item">
@@ -297,28 +349,35 @@ export function WorkspacePage() {
                         <span>{formatLength(item.boxInput.externalWidthMm, unitSystem)} W</span>
                         <span>{formatLength(item.boxInput.externalHeightMm, unitSystem)} H</span>
                         <span>{itemResult.paper.label}</span>
-                        <span>{item.orientation}</span>
+                        <span>{getOrientationStrategyLabel(item.orientation, itemResult.layout)}</span>
                         <span>{formatLength(itemPart.bounds.width, unitSystem)} part width</span>
                       </div>
                       <div className="wizard-actions-inline queue-actions-inline">
-                        <button
-                          type="button"
-                          className="toolbar-button"
-                          onClick={() => exportQueueItemPdf(item.id)}
-                          disabled={
-                            hasBlockingIssues(itemResult.validation.messages) ||
-                            !itemResult.layout.hasLegalPlacement
-                          }
-                        >
-                          Export PDF
-                        </button>
-                        <button
-                          type="button"
-                          className="toolbar-button toolbar-button--ghost"
-                          onClick={() => removeQueueItem(item.id)}
-                        >
-                          Remove
-                        </button>
+                        <div className="toolbar-group">
+                          <button
+                            type="button"
+                            className="toolbar-button"
+                            onClick={() => exportQueueItemPdf(item.id)}
+                            disabled={!canExportItemPdf}
+                          >
+                            Export PDF
+                          </button>
+                          <button
+                            type="button"
+                            className="toolbar-button"
+                            onClick={() => exportQueueItemSvg(item.id)}
+                            disabled={!canExportItemSvg}
+                          >
+                            Export SVG
+                          </button>
+                          <button
+                            type="button"
+                            className="toolbar-button toolbar-button--ghost"
+                            onClick={() => removeQueueItem(item.id)}
+                          >
+                            Remove
+                          </button>
+                        </div>
                       </div>
                     </li>
                   )

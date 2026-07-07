@@ -9,9 +9,18 @@ export function downloadBytes(bytes: Uint8Array, fileName: string, mimeType: str
   URL.revokeObjectURL(objectUrl)
 }
 
-export function buildPdfFileName(itemName: string, paperSizeId: string) {
-  const safeName =
-    itemName.trim().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '') || 'TemplateForge'
+export function downloadText(contents: string, fileName: string, mimeType: string) {
+  downloadBytes(new TextEncoder().encode(contents), fileName, mimeType)
+}
 
-  return `${safeName}_${paperSizeId.toUpperCase()}.pdf`
+function normalizeItemName(itemName: string) {
+  return itemName.trim().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '') || 'TemplateForge'
+}
+
+export function buildPdfFileName(itemName: string, paperSizeId: string) {
+  return `${normalizeItemName(itemName)}_${paperSizeId.toUpperCase()}.pdf`
+}
+
+export function buildSvgFileName(itemName: string) {
+  return `${normalizeItemName(itemName)}.svg`
 }

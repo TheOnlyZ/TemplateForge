@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import {
   type MarginConfig,
-  type Orientation,
+  type OrientationPreference,
   type PaperSizeId,
   clampMarginConfig,
   getDefaultMarginConfig,
@@ -23,7 +23,7 @@ export interface BoxDraft {
   boxInput: BoxInput
   materialId: MaterialId
   paperSizeId: PaperSizeId
-  orientation: Orientation
+  orientation: OrientationPreference
   margins: MarginConfig
 }
 
@@ -52,7 +52,7 @@ function createDefaultDraft(index: number): BoxDraft {
     },
     materialId: 'cardstock',
     paperSizeId: 'a4',
-    orientation: 'portrait',
+    orientation: 'auto',
     margins: getDefaultMarginConfig(),
   }
 }
@@ -68,7 +68,7 @@ interface AppState {
   setDraftStyle: (style: BoxStyle) => void
   setDraftMaterialId: (materialId: MaterialId) => void
   setDraftPaperSizeId: (paperSizeId: PaperSizeId) => void
-  setDraftOrientation: (orientation: Orientation) => void
+  setDraftOrientation: (orientation: OrientationPreference) => void
   setDraftMargin: (side: keyof MarginConfig, value: number) => void
   setDraftDimension: (dimension: keyof Omit<BoxInput, 'style'>, value: number) => void
   setDraftStep: (step: BoxWizardStepId) => void

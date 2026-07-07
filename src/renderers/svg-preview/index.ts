@@ -16,6 +16,8 @@ export interface PreviewLabel {
 
 export interface PreviewScene {
   viewBox: string
+  width: number
+  height: number
   panelPaths: PreviewPath[]
   cutPaths: PreviewPath[]
   foldPaths: PreviewPath[]
@@ -82,9 +84,13 @@ export function renderTemplatePreview(template: TemplateItem): PreviewScene {
   ]
   const bounds = getBounds(allPoints)
   const padding = 12
+  const width = bounds.width + padding * 2
+  const height = bounds.height + padding * 2
 
   return {
-    viewBox: `${bounds.minX - padding} ${bounds.minY - padding} ${bounds.width + padding * 2} ${bounds.height + padding * 2}`,
+    viewBox: `${bounds.minX - padding} ${bounds.minY - padding} ${width} ${height}`,
+    width,
+    height,
     panelPaths: template.panels.map(buildPanelPath),
     cutPaths: template.cutPaths.map(buildCutPath),
     foldPaths: template.foldLines.map(buildFoldPath),

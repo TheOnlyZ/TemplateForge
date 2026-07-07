@@ -2,7 +2,6 @@ import { getMaterialDefinition, getMaterialOptions } from '../../../domain/mater
 import { getPaperSizeOptions } from '../../../domain/paper/index.ts'
 import type { TemplateItem } from '../../../domain/templates/index.ts'
 import { formatLength, type UnitSystem } from '../../../domain/units/index.ts'
-import type { ValidationMessage } from '../../../domain/validation/index.ts'
 import type { BoxStyle } from '../../../domain/shapes/box/index.ts'
 import { useAppStore, type BoxWizardStepId } from '../../../store/app-store.ts'
 
@@ -36,21 +35,19 @@ const styleOptions: { id: BoxStyle; title: string; description: string }[] = [
 interface BoxWizardProps {
   unitSystem: UnitSystem
   previewTemplate: TemplateItem
-  validationMessages: ValidationMessage[]
-  previewFitsCurrentPaper: boolean
+  canExportPreviewPdf: boolean
+  canExportPreviewSvg: boolean
   onExportPreviewPdf: () => void
-}
-
-function hasBlockingMessages(messages: ValidationMessage[]) {
-  return messages.some((message) => message.severity === 'error')
+  onExportPreviewSvg: () => void
 }
 
 export function BoxWizard({
   unitSystem,
   previewTemplate,
-  validationMessages,
-  previewFitsCurrentPaper,
+  canExportPreviewPdf,
+  canExportPreviewSvg,
   onExportPreviewPdf,
+  onExportPreviewSvg,
 }: BoxWizardProps) {
   const {
     addDraftToQueue,
@@ -70,7 +67,6 @@ export function BoxWizard({
 
   const stepIndex = steps.findIndex((step) => step.id === draftStep)
   const activeMaterial = getMaterialDefinition(draft.materialId)
-  const canExport = previewFitsCurrentPaper && !hasBlockingMessages(validationMessages)
 
   return (
     <article className="panel-card wizard-card">
@@ -226,12 +222,13 @@ export function BoxWizard({
             </label>
 
             <label className="panel-field">
-              <span>Orientation</span>
+              <span>Orientation strategy</span>
               <select
                 className="panel-select"
                 value={draft.orientation}
                 onChange={(event) => setDraftOrientation(event.target.value as typeof draft.orientation)}
               >
+                <option value="auto">Auto (recommended)</option>
                 <option value="portrait">Portrait</option>
                 <option value="landscape">Landscape</option>
               </select>
@@ -284,18 +281,30 @@ export function BoxWizard({
           </div>
 
           <div className="wizard-actions-inline">
-            <button
-              type="button"
-              className="toolbar-button"
-              onClick={onExportPreviewPdf}
-              disabled={!canExport}
-            >
-              Export Preview PDF
-            </button>
+            <div className="toolbar-group">
+              <button
+                type="button"
+                className="toolbar-button"
+                onClick={onExportPreviewPdf}
+                disabled={!canExportPreviewPdf}
+              >
+                Export Preview PDF
+              </button>
+              <button
+                type="button"
+                className="toolbar-button"
+                onClick={onExportPreviewSvg}
+                disabled={!canExportPreviewSvg}
+              >
+                Export Preview SVG
+              </button>
+            </div>
             <p className="toolbar-note">
-              {canExport
-                ? 'Single-page PDF export is ready for this preview.'
-                : 'Resolve blocking validation or paper fit issues before exporting.'}
+              {!canExportPreviewSvg
+                ? 'Resolve blocking validation before exporting.'
+                : canExportPreviewPdf
+                  ? 'SVG and PDF export are ready for this preview.'
+                  : 'SVG export is ready. PDF export still has blocking layout constraints.'}
             </p>
           </div>
         </div>
@@ -312,12 +321,12 @@ export function BoxWizard({
               type="button"
               className="toolbar-button"
               onClick={() => addDraftToQueue()}
-              disabled={!canExport}
+              disabled={!canExportPreviewPdf}
             >
               Add to Queue
             </button>
             <p className="toolbar-note">
-              {canExport
+              {canExportPreviewPdf
                 ? 'This item is ready to commit to the queue.'
                 : 'Queue add is blocked until the preview is export-safe.'}
             </p>
