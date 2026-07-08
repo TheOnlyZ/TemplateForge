@@ -1,4 +1,5 @@
 import { type CSSProperties, useEffect, useMemo, useState } from 'react'
+import type { AssemblyPartMapping } from './mapping.ts'
 import type { BoxInput, BoxStyle } from '../../domain/shapes/box/index.ts'
 import { formatLength, type UnitSystem } from '../../domain/units/index.ts'
 
@@ -23,6 +24,7 @@ interface AssemblySequenceStep {
 interface BoxAssemblyViewProps {
   name: string
   boxInput: BoxInput
+  partMappings: AssemblyPartMapping[]
   unitSystem: UnitSystem
   activeFaceId?: AssemblyFaceId | null
   onFaceHighlightChange?: (faceId: AssemblyFaceId | null) => void
@@ -156,6 +158,7 @@ export function BoxAssemblyView({
   name,
   onFaceHighlightChange,
   onSequenceStepChange,
+  partMappings,
   unitSystem,
 }: BoxAssemblyViewProps) {
   const sequenceSteps = useMemo(() => getAssemblySequenceSteps(boxInput.style), [boxInput.style])
@@ -422,6 +425,35 @@ export function BoxAssemblyView({
             {step.title}
           </button>
         ))}
+      </div>
+      <div className="assembly-view__mapping" aria-label="Part identification and page mapping">
+        <div className="assembly-view__mapping-header">
+          <strong>Part Identification</strong>
+          <span className="tag">
+            {partMappings.length} part{partMappings.length === 1 ? '' : 's'}
+          </span>
+        </div>
+        <div className="assembly-view__mapping-list">
+          {partMappings.map((mapping) => (
+            <article key={mapping.partId} className="assembly-view__mapping-item">
+              <div>
+                <strong>{mapping.partName}</strong>
+                <p>
+                  {mapping.tileCount === 1
+                    ? 'This assembled part maps to a single printable page.'
+                    : `This assembled part spans ${mapping.tileCount} printable tiles.`}
+                </p>
+              </div>
+              <div className="assembly-view__mapping-pages">
+                {mapping.pageLabels.map((label) => (
+                  <span key={label} className="meta-chip">
+                    {label}
+                  </span>
+                ))}
+              </div>
+            </article>
+          ))}
+        </div>
       </div>
       <div className="assembly-view__meta" aria-label="Assembly dimensions">
         <span className="meta-chip">{formatLength(boxInput.externalLengthMm, unitSystem)} L</span>

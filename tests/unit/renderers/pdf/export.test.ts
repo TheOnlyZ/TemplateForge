@@ -3,7 +3,12 @@ import { describe, expect, it } from 'vitest'
 import { layoutTemplate } from '../../../../src/domain/layout/index.ts'
 import { getDefaultMarginConfig, getPaperDefinition } from '../../../../src/domain/paper/index.ts'
 import { generateBoxTemplate } from '../../../../src/domain/shapes/box/index.ts'
+import { generateConeTemplate } from '../../../../src/domain/shapes/cone/index.ts'
+import { generateCustomParametricShapeTemplate } from '../../../../src/domain/shapes/custom-parametric/index.ts'
 import { generateCylinderTemplate } from '../../../../src/domain/shapes/cylinder/index.ts'
+import { generateDrawerBoxTemplate } from '../../../../src/domain/shapes/drawer-telescoping/index.ts'
+import { generatePolygonalPrismTemplate } from '../../../../src/domain/shapes/polygonal-prism/index.ts'
+import { generateTubeTemplate } from '../../../../src/domain/shapes/tube-sleeve/index.ts'
 import type { TemplateItem } from '../../../../src/domain/templates/index.ts'
 import { exportProjectToPdf, exportTemplateToPdf } from '../../../../src/renderers/pdf/index.ts'
 
@@ -92,6 +97,126 @@ describe('exportTemplateToPdf', () => {
       {
         itemId: 'pdf-cylinder',
         itemName: 'PDF Cylinder',
+      },
+    )
+    const layout = layoutTemplate(template, paper, 'auto', getDefaultMarginConfig())
+
+    expect(layout.hasLegalPlacement).toBe(true)
+
+    const bytes = await exportTemplateToPdf({ template, layout, paper })
+    const pdf = await PDFDocument.load(bytes)
+
+    expect(pdf.getPageCount()).toBe(1)
+  })
+
+  it('exports a generated cone template through the same layout and PDF pipeline', async () => {
+    const paper = getPaperDefinition('a4')
+    const { template } = generateConeTemplate(
+      {
+        baseDiameterMm: 60,
+        heightMm: 80,
+      },
+      {
+        itemId: 'pdf-cone',
+        itemName: 'PDF Cone',
+      },
+    )
+    const layout = layoutTemplate(template, paper, 'auto', getDefaultMarginConfig())
+
+    expect(layout.hasLegalPlacement).toBe(true)
+
+    const bytes = await exportTemplateToPdf({ template, layout, paper })
+    const pdf = await PDFDocument.load(bytes)
+
+    expect(pdf.getPageCount()).toBe(1)
+  })
+
+  it('exports a generated polygonal prism template through the same layout and PDF pipeline', async () => {
+    const paper = getPaperDefinition('a4')
+    const { template } = generatePolygonalPrismTemplate(
+      {
+        sideCount: 6,
+        sideLengthMm: 26,
+        heightMm: 60,
+      },
+      {
+        itemId: 'pdf-prism',
+        itemName: 'PDF Prism',
+      },
+    )
+    const layout = layoutTemplate(template, paper, 'auto', getDefaultMarginConfig())
+
+    expect(layout.hasLegalPlacement).toBe(true)
+
+    const bytes = await exportTemplateToPdf({ template, layout, paper })
+    const pdf = await PDFDocument.load(bytes)
+
+    expect(pdf.getPageCount()).toBe(1)
+  })
+
+  it('exports a generated tube template through the same layout and PDF pipeline', async () => {
+    const paper = getPaperDefinition('a4')
+    const { template } = generateTubeTemplate(
+      {
+        diameterMm: 60,
+        heightMm: 100,
+      },
+      {
+        itemId: 'pdf-tube',
+        itemName: 'PDF Tube',
+      },
+    )
+    const layout = layoutTemplate(template, paper, 'auto', getDefaultMarginConfig())
+
+    expect(layout.hasLegalPlacement).toBe(true)
+
+    const bytes = await exportTemplateToPdf({ template, layout, paper })
+    const pdf = await PDFDocument.load(bytes)
+
+    expect(pdf.getPageCount()).toBe(1)
+  })
+
+  it('exports a generated drawer box template through the same layout and PDF pipeline', async () => {
+    const paper = getPaperDefinition('a4')
+    const { template } = generateDrawerBoxTemplate(
+      {
+        externalLengthMm: 90,
+        externalWidthMm: 60,
+        externalHeightMm: 18,
+        glueTabWidthMm: 12,
+      },
+      {
+        itemId: 'pdf-drawer-box',
+        itemName: 'PDF Drawer Box',
+      },
+    )
+    const layout = layoutTemplate(template, paper, 'auto', getDefaultMarginConfig())
+
+    expect(layout.hasLegalPlacement).toBe(true)
+
+    const bytes = await exportTemplateToPdf({ template, layout, paper })
+    const pdf = await PDFDocument.load(bytes)
+
+    expect(pdf.getPageCount()).toBe(1)
+  })
+
+  it('exports a generated custom parametric shape through the same layout and PDF pipeline', async () => {
+    const paper = getPaperDefinition('a4')
+    const { template } = generateCustomParametricShapeTemplate(
+      {
+        partName: 'PDF Custom Strip',
+        panelHeightMm: 58,
+        glueTabWidthMm: 12,
+        topTabDepthMm: 12,
+        panels: [
+          { name: 'Panel A', widthMm: 46 },
+          { name: 'Panel B', widthMm: 34 },
+          { name: 'Panel C', widthMm: 46 },
+        ],
+      },
+      {
+        itemId: 'pdf-custom-shape',
+        itemName: 'PDF Custom Shape',
       },
     )
     const layout = layoutTemplate(template, paper, 'auto', getDefaultMarginConfig())

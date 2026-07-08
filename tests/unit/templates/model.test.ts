@@ -119,4 +119,53 @@ describe('template model', () => {
     expect(template.shapeType).toBe('cylinder')
     expect(template.splitCandidates[0].kind).toBe('fold')
   })
+
+  it('can represent a cone template without changing the contract', () => {
+    const template = buildTemplate('cone')
+
+    expect(template.shapeType).toBe('cone')
+    expect(template.pages[0].paperSizeId).toBe('a4')
+  })
+
+  it('can represent a polygonal prism template without changing the contract', () => {
+    const template = buildTemplate('polygonal-prism')
+
+    expect(template.shapeType).toBe('polygonal-prism')
+    expect(template.pages[0].paperSizeId).toBe('a4')
+  })
+
+  it('can represent a tube template without changing the contract', () => {
+    const template = buildTemplate('tube')
+
+    expect(template.shapeType).toBe('tube')
+    expect(template.pages[0].paperSizeId).toBe('a4')
+  })
+
+  it('can represent a sleeve template without changing the contract', () => {
+    const template = buildTemplate('sleeve')
+
+    expect(template.shapeType).toBe('sleeve')
+    expect(template.pages[0].paperSizeId).toBe('a4')
+  })
+
+  it('can represent a drawer box template without changing the contract', () => {
+    const template = buildTemplate('drawer-box')
+
+    expect(template.shapeType).toBe('drawer-box')
+    expect(template.pages[0].paperSizeId).toBe('a4')
+  })
+
+  it('can represent a telescoping box template without changing the contract', () => {
+    const template = buildTemplate('telescoping-box')
+
+    expect(template.shapeType).toBe('telescoping-box')
+    expect(template.pages[0].paperSizeId).toBe('a4')
+  })
+
+  it('can represent a custom parametric template without changing the contract', () => {
+    const template = buildTemplate('custom-parametric')
+
+    expect(template.shapeType).toBe('custom-parametric')
+    expect(template.pages[0].paperSizeId).toBe('a4')
+  })
 })

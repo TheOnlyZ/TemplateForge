@@ -1,5 +1,6 @@
 import { type ChangeEvent, useMemo, useRef, useState } from 'react'
 import { BoxAssemblyView } from '../assembly/BoxAssemblyView.tsx'
+import { buildAssemblyPartMappings } from '../assembly/mapping.ts'
 import type { AssemblyFaceId, AssemblySequenceStepId } from '../assembly/BoxAssemblyView.tsx'
 import { TemplatePreview } from '../preview/TemplatePreview.tsx'
 import { BoxWizard } from '../wizard/box-wizard/BoxWizard.tsx'
@@ -208,6 +209,10 @@ export function WorkspacePage() {
   const faceHighlightTargets = useMemo(
     () => getFaceHighlightTargets(preview.template, draft.boxInput.style),
     [draft.boxInput.style, preview.template],
+  )
+  const assemblyPartMappings = useMemo(
+    () => buildAssemblyPartMappings(preview.template, preview.layout),
+    [preview.layout, preview.template],
   )
   const foldGuidanceTargets = useMemo(
     () => getFoldGuidanceTargets(preview.template, draft.boxInput.style, activeAssemblyStepId),
@@ -490,7 +495,7 @@ export function WorkspacePage() {
                   <p>
                     Isometric assembled-form preview driven by the current box dimensions and style
                     selection. Sequence steps now drive fold guidance while face hover still spotlights
-                    matching template regions.
+                    matching template regions and printable page mappings.
                   </p>
                 </div>
                 <BoxAssemblyView
@@ -499,6 +504,7 @@ export function WorkspacePage() {
                   boxInput={draft.boxInput}
                   onFaceHighlightChange={setHighlightedAssemblyFaceId}
                   onSequenceStepChange={setActiveAssemblyStepId}
+                  partMappings={assemblyPartMappings}
                   unitSystem={unitSystem}
                 />
               </div>

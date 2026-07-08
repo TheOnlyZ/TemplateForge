@@ -53,7 +53,7 @@ npm run build
 
 ## Current Focus
 
-The current implementation now covers Phases 1 through 5 plus the first four Phase 6 slices: a box-focused 3D assembly view with face-to-template highlighting, animated sequencing, and interactive fold guidance. The next active build slice is part identification and page mapping within the assembly workflow.
+The current implementation now covers all seven planned roadmap phases. The Future Vision items remain intentionally deferred for a later pass.
 
 ## Roadmap
 
@@ -92,19 +92,19 @@ The current implementation now covers Phases 1 through 5 plus the first four Pha
 - [x] Save and reopen projects
 - [x] Shape duplication and editing
 
-### Phase 6 — Interactive Assembly *(In Progress)*
+### Phase 6 — Interactive Assembly ✅
 - [x] 3D Assembly View
 - [x] Face-to-template highlighting
 - [x] Animated assembly sequence
 - [x] Interactive folding guidance
-- [ ] Part identification and page mapping
+- [x] Part identification and page mapping
 
-### Phase 7 — Expanded Shape Library
-- [ ] Cones and truncated cones
-- [ ] Polygonal prisms
-- [ ] Tubes and sleeves
-- [ ] Drawer and telescoping boxes
-- [ ] Custom parametric shapes
+### Phase 7 — Expanded Shape Library ✅
+- [x] Cones and truncated cones
+- [x] Polygonal prisms
+- [x] Tubes and sleeves
+- [x] Drawer and telescoping boxes
+- [x] Custom parametric shapes
 
 ### Future Vision
 - [ ] Material thickness compensation

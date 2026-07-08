@@ -1,7 +1,16 @@
 import { getBounds, type Bounds, type Point } from '../../geometry/index.ts'
 import type { TemplateItem } from '../../templates/index.ts'
 
-export type ShapeType = 'box' | 'cylinder'
+export type ShapeType =
+  | 'box'
+  | 'cylinder'
+  | 'cone'
+  | 'polygonal-prism'
+  | 'tube'
+  | 'sleeve'
+  | 'drawer-box'
+  | 'telescoping-box'
+  | 'custom-parametric'
 
 export interface ShapeGenerationContext {
   itemId: string

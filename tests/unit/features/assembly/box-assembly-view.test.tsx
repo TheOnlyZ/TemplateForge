@@ -1,6 +1,17 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { BoxAssemblyView } from '../../../../src/features/assembly/BoxAssemblyView.tsx'
+import type { AssemblyPartMapping } from '../../../../src/features/assembly/mapping.ts'
+
+const defaultPartMappings: AssemblyPartMapping[] = [
+  {
+    partId: 'part-main',
+    partName: 'Open Tray',
+    pageNumbers: [1],
+    pageLabels: ['Page 1'],
+    tileCount: 1,
+  },
+]
 
 describe('BoxAssemblyView', () => {
   it('renders an accessible assembled 3D box view with dimension chips', () => {
@@ -14,6 +25,7 @@ describe('BoxAssemblyView', () => {
           glueTabWidthMm: 12,
           style: 'open-tray',
         }}
+        partMappings={defaultPartMappings}
         unitSystem="metric"
       />,
     )
@@ -36,6 +48,7 @@ describe('BoxAssemblyView', () => {
           glueTabWidthMm: 16,
           style: 'tuck-carton',
         }}
+        partMappings={defaultPartMappings}
         unitSystem="imperial"
       />,
     )
@@ -56,6 +69,7 @@ describe('BoxAssemblyView', () => {
           glueTabWidthMm: 12,
           style: 'open-tray',
         }}
+        partMappings={defaultPartMappings}
         unitSystem="metric"
         onFaceHighlightChange={onFaceHighlightChange}
       />,
@@ -86,6 +100,7 @@ describe('BoxAssemblyView', () => {
           glueTabWidthMm: 12,
           style: 'open-tray',
         }}
+        partMappings={defaultPartMappings}
         unitSystem="metric"
         onSequenceStepChange={onSequenceStepChange}
       />,
@@ -114,6 +129,7 @@ describe('BoxAssemblyView', () => {
           glueTabWidthMm: 12,
           style: 'open-tray',
         }}
+        partMappings={defaultPartMappings}
         unitSystem="metric"
       />,
     )
@@ -144,6 +160,8 @@ describe('BoxAssemblyView', () => {
       ),
     ).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Play Sequence' })).toBeInTheDocument()
+    expect(screen.getByText('Part Identification')).toBeInTheDocument()
+    expect(screen.getByText('Page 1')).toBeInTheDocument()
 
     vi.useRealTimers()
   })
