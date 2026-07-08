@@ -32,6 +32,22 @@ export function formatLength(mm: LengthMm, unitSystem: UnitSystem) {
   return `${value} ${suffix}`
 }
 
+export function formatEditableLength(mm: LengthMm, unitSystem: UnitSystem) {
+  return unitSystem === 'imperial' ? roundToPrecision(convertMmToInches(mm), 3) : roundToPrecision(mm, 2)
+}
+
+export function parseEditableLengthInput(value: number, unitSystem: UnitSystem) {
+  if (!Number.isFinite(value)) {
+    return 0
+  }
+
+  return unitSystem === 'imperial' ? convertInchesToMm(value) : roundToPrecision(value, 6)
+}
+
+export function getUnitSuffix(unitSystem: UnitSystem) {
+  return unitSystem === 'imperial' ? 'in' : 'mm'
+}
+
 export function withinTolerance(
   actualMm: LengthMm,
   expectedMm: LengthMm,

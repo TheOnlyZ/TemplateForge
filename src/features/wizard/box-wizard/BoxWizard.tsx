@@ -1,7 +1,13 @@
 import { getMaterialDefinition, getMaterialOptions } from '../../../domain/materials/index.ts'
 import { getPaperSizeOptions } from '../../../domain/paper/index.ts'
 import type { TemplateItem } from '../../../domain/templates/index.ts'
-import { formatLength, type UnitSystem } from '../../../domain/units/index.ts'
+import {
+  formatEditableLength,
+  formatLength,
+  getUnitSuffix,
+  parseEditableLengthInput,
+  type UnitSystem,
+} from '../../../domain/units/index.ts'
 import type { BoxStyle } from '../../../domain/shapes/box/index.ts'
 import { useAppStore, type BoxWizardStepId } from '../../../store/app-store.ts'
 
@@ -70,6 +76,19 @@ export function BoxWizard({
   const stepIndex = steps.findIndex((step) => step.id === draftStep)
   const activeMaterial = getMaterialDefinition(draft.materialId)
   const isEditingQueueItem = editingQueueItemId !== null
+  const alternateUnitSystem = unitSystem === 'metric' ? 'imperial' : 'metric'
+
+  function formatInputValue(valueMm: number) {
+    return formatEditableLength(valueMm, unitSystem)
+  }
+
+  function parseInputValue(value: string) {
+    return parseEditableLengthInput(Number(value), unitSystem)
+  }
+
+  function formatAlternateLength(valueMm: number) {
+    return `Approx. ${formatLength(valueMm, alternateUnitSystem)}`
+  }
 
   return (
     <article className="panel-card wizard-card">
@@ -113,57 +132,65 @@ export function BoxWizard({
 
           <div className="panel-grid">
             <label className="panel-field">
-              <span>External length</span>
+              <span>External length ({getUnitSuffix(unitSystem)})</span>
               <input
                 className="panel-input"
                 type="number"
-                min="12.7"
-                max="914.4"
-                step="1"
-                value={draft.boxInput.externalLengthMm}
-                onChange={(event) => setDraftDimension('externalLengthMm', Number(event.target.value))}
+                min={formatInputValue(12.7)}
+                max={formatInputValue(914.4)}
+                step={unitSystem === 'imperial' ? 0.01 : 1}
+                value={formatInputValue(draft.boxInput.externalLengthMm)}
+                onChange={(event) =>
+                  setDraftDimension('externalLengthMm', parseInputValue(event.target.value))
+                }
               />
-              <small>{formatLength(draft.boxInput.externalLengthMm, unitSystem)}</small>
+              <small>{formatAlternateLength(draft.boxInput.externalLengthMm)}</small>
             </label>
 
             <label className="panel-field">
-              <span>External width</span>
+              <span>External width ({getUnitSuffix(unitSystem)})</span>
               <input
                 className="panel-input"
                 type="number"
-                min="12.7"
-                max="914.4"
-                step="1"
-                value={draft.boxInput.externalWidthMm}
-                onChange={(event) => setDraftDimension('externalWidthMm', Number(event.target.value))}
+                min={formatInputValue(12.7)}
+                max={formatInputValue(914.4)}
+                step={unitSystem === 'imperial' ? 0.01 : 1}
+                value={formatInputValue(draft.boxInput.externalWidthMm)}
+                onChange={(event) =>
+                  setDraftDimension('externalWidthMm', parseInputValue(event.target.value))
+                }
               />
-              <small>{formatLength(draft.boxInput.externalWidthMm, unitSystem)}</small>
+              <small>{formatAlternateLength(draft.boxInput.externalWidthMm)}</small>
             </label>
 
             <label className="panel-field">
-              <span>External height</span>
+              <span>External height ({getUnitSuffix(unitSystem)})</span>
               <input
                 className="panel-input"
                 type="number"
-                min="12.7"
-                max="914.4"
-                step="1"
-                value={draft.boxInput.externalHeightMm}
-                onChange={(event) => setDraftDimension('externalHeightMm', Number(event.target.value))}
+                min={formatInputValue(12.7)}
+                max={formatInputValue(914.4)}
+                step={unitSystem === 'imperial' ? 0.01 : 1}
+                value={formatInputValue(draft.boxInput.externalHeightMm)}
+                onChange={(event) =>
+                  setDraftDimension('externalHeightMm', parseInputValue(event.target.value))
+                }
               />
-              <small>{formatLength(draft.boxInput.externalHeightMm, unitSystem)}</small>
+              <small>{formatAlternateLength(draft.boxInput.externalHeightMm)}</small>
             </label>
 
             <label className="panel-field">
-              <span>Glue tab / seam width</span>
+              <span>Glue tab / seam width ({getUnitSuffix(unitSystem)})</span>
               <input
                 className="panel-input"
                 type="number"
-                min="6"
-                max="40"
-                step="1"
-                value={draft.boxInput.glueTabWidthMm}
-                onChange={(event) => setDraftDimension('glueTabWidthMm', Number(event.target.value))}
+                min={formatInputValue(6)}
+                max={formatInputValue(40)}
+                step={unitSystem === 'imperial' ? 0.01 : 1}
+                value={formatInputValue(draft.boxInput.glueTabWidthMm)}
+                onChange={(event) =>
+                  setDraftDimension('glueTabWidthMm', parseInputValue(event.target.value))
+                }
               />
               <small>
                 Recommended: {formatLength(activeMaterial.recommendedGlueTabWidthMm, unitSystem)}
@@ -250,16 +277,19 @@ export function BoxWizard({
               ['left', 'Left'],
             ] as const).map(([side, label]) => (
               <label key={side} className="panel-field">
-                <span>{label} margin</span>
+                <span>
+                  {label} margin ({getUnitSuffix(unitSystem)})
+                </span>
                 <input
                   className="panel-input"
                   type="number"
-                  min="3"
-                  max="25.4"
-                  step="0.1"
-                  value={draft.margins[side]}
-                  onChange={(event) => setDraftMargin(side, Number(event.target.value))}
+                  min={formatInputValue(3)}
+                  max={formatInputValue(25.4)}
+                  step={unitSystem === 'imperial' ? 0.01 : 0.1}
+                  value={formatInputValue(draft.margins[side])}
+                  onChange={(event) => setDraftMargin(side, parseInputValue(event.target.value))}
                 />
+                <small>{formatAlternateLength(draft.margins[side])}</small>
               </label>
             ))}
           </div>

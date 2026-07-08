@@ -60,7 +60,7 @@ function createDefaultDraft(index: number): BoxDraft {
       style: 'open-tray',
     },
     materialId: 'cardstock',
-    paperSizeId: 'a4',
+    paperSizeId: 'letter',
     orientation: 'auto',
     margins: getDefaultMarginConfig(),
   }

@@ -2,6 +2,8 @@ import { act, fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { BoxAssemblyView } from '../../../../src/features/assembly/BoxAssemblyView.tsx'
 import type { AssemblyPartMapping } from '../../../../src/features/assembly/mapping.ts'
+import { buildBoxAssemblyModel } from '../../../../src/features/assembly/model.ts'
+import { generateBoxTemplate } from '../../../../src/domain/shapes/box/index.ts'
 
 const defaultPartMappings: AssemblyPartMapping[] = [
   {
@@ -12,6 +14,44 @@ const defaultPartMappings: AssemblyPartMapping[] = [
     tileCount: 1,
   },
 ]
+
+function buildOpenTrayModel() {
+  return buildBoxAssemblyModel(
+    generateBoxTemplate(
+      {
+        externalLengthMm: 120,
+        externalWidthMm: 80,
+        externalHeightMm: 24,
+        glueTabWidthMm: 12,
+        style: 'open-tray',
+      },
+      {
+        itemId: 'assembly-view-open-tray',
+        itemName: 'Assembly View Open Tray',
+      },
+    ).template,
+    'open-tray',
+  )
+}
+
+function buildTuckCartonModel() {
+  return buildBoxAssemblyModel(
+    generateBoxTemplate(
+      {
+        externalLengthMm: 140,
+        externalWidthMm: 90,
+        externalHeightMm: 55,
+        glueTabWidthMm: 16,
+        style: 'tuck-carton',
+      },
+      {
+        itemId: 'assembly-view-carton',
+        itemName: 'Assembly View Carton',
+      },
+    ).template,
+    'tuck-carton',
+  )
+}
 
 describe('BoxAssemblyView', () => {
   it('renders an accessible assembled 3D box view with dimension chips', () => {
@@ -25,13 +65,17 @@ describe('BoxAssemblyView', () => {
           glueTabWidthMm: 12,
           style: 'open-tray',
         }}
+        model={buildOpenTrayModel()}
+        mode="finished"
         partMappings={defaultPartMappings}
         unitSystem="metric"
       />,
     )
 
     expect(screen.getByRole('img', { name: 'Assembly Box assembled 3D view' })).toBeInTheDocument()
-    expect(screen.getByText('Open Top')).toBeInTheDocument()
+    expect(screen.getByText('This is the finished object.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Finished Object' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByText('Base')).toBeInTheDocument()
     expect(screen.getByText('120 mm L')).toBeInTheDocument()
     expect(screen.getByText('80 mm W')).toBeInTheDocument()
     expect(screen.getByText('24 mm H')).toBeInTheDocument()
@@ -48,17 +92,19 @@ describe('BoxAssemblyView', () => {
           glueTabWidthMm: 16,
           style: 'tuck-carton',
         }}
+        model={buildTuckCartonModel()}
+        mode="finished"
         partMappings={defaultPartMappings}
         unitSystem="imperial"
       />,
     )
 
-    expect(screen.getByText('Top Closure')).toBeInTheDocument()
+    expect(screen.getByText('Top')).toBeInTheDocument()
     expect(screen.getByText('Tuck Carton')).toBeInTheDocument()
   })
 
   it('emits face highlight changes when a visible face is hovered', () => {
-    const onFaceHighlightChange = vi.fn()
+    const onFaceHoverChange = vi.fn()
     const { container } = render(
       <BoxAssemblyView
         name="Hover Box"
@@ -69,9 +115,11 @@ describe('BoxAssemblyView', () => {
           glueTabWidthMm: 12,
           style: 'open-tray',
         }}
+        model={buildOpenTrayModel()}
+        mode="finished"
         partMappings={defaultPartMappings}
         unitSystem="metric"
-        onFaceHighlightChange={onFaceHighlightChange}
+        onFaceHoverChange={onFaceHoverChange}
       />,
     )
 
@@ -82,13 +130,13 @@ describe('BoxAssemblyView', () => {
     fireEvent.mouseEnter(frontFace!)
     fireEvent.mouseLeave(frontFace!)
 
-    expect(onFaceHighlightChange).toHaveBeenNthCalledWith(1, 'front')
-    expect(onFaceHighlightChange).toHaveBeenNthCalledWith(2, null)
+    expect(onFaceHoverChange).toHaveBeenNthCalledWith(1, 'front')
+    expect(onFaceHoverChange).toHaveBeenNthCalledWith(2, null)
   })
 
-  it('notifies consumers when the active assembly step changes', () => {
-    vi.useFakeTimers()
-    const onSequenceStepChange = vi.fn()
+  it('switches modes and notifies consumers when the active sequence step changes', () => {
+    const onModeChange = vi.fn()
+    const onStepChange = vi.fn()
 
     render(
       <BoxAssemblyView
@@ -100,24 +148,28 @@ describe('BoxAssemblyView', () => {
           glueTabWidthMm: 12,
           style: 'open-tray',
         }}
+        activeStepId="fold-front-wall"
+        model={buildOpenTrayModel()}
+        mode="sequence"
+        onModeChange={onModeChange}
         partMappings={defaultPartMappings}
         unitSystem="metric"
-        onSequenceStepChange={onSequenceStepChange}
+        onStepChange={onStepChange}
       />,
     )
 
-    expect(onSequenceStepChange).toHaveBeenCalledWith('flat-setup', 'top')
+    fireEvent.click(screen.getByRole('button', { name: 'Exploded View' }))
 
-    act(() => {
-      vi.advanceTimersByTime(1700)
-    })
+    expect(onModeChange).toHaveBeenCalledWith('exploded')
 
-    expect(onSequenceStepChange).toHaveBeenCalledWith('walls-rising', 'side')
-    vi.useRealTimers()
+    fireEvent.click(screen.getByRole('button', { name: /Fold Back Wall upward 90°/ }))
+
+    expect(onStepChange).toHaveBeenCalledWith('fold-back-wall')
   })
 
   it('advances through the assembly sequence and supports pausing on a selected step', () => {
     vi.useFakeTimers()
+    const onStepChange = vi.fn()
 
     render(
       <BoxAssemblyView
@@ -129,36 +181,30 @@ describe('BoxAssemblyView', () => {
           glueTabWidthMm: 12,
           style: 'open-tray',
         }}
+        activeStepId="fold-front-wall"
+        model={buildOpenTrayModel()}
+        mode="sequence"
+        onStepChange={onStepChange}
         partMappings={defaultPartMappings}
         unitSystem="metric"
       />,
     )
 
-    expect(screen.getByRole('button', { name: 'Pause Sequence' })).toBeInTheDocument()
-    expect(
-      screen.getByText(
-        'Score the front and back wall fold lines first so the tray can hinge upward cleanly from the base.',
-      ),
-    ).toBeInTheDocument()
+    expect(screen.getAllByText('Fold Front Wall upward 90°').length).toBeGreaterThan(0)
+    expect(screen.getByText('Fold Up')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Play Sequence' }))
 
     act(() => {
-      vi.advanceTimersByTime(1700)
+      vi.advanceTimersByTime(1900)
     })
 
-    expect(
-      screen.getByText(
-        'Raise the left and right wall folds after the front and back walls are creased to square the tray shell.',
-      ),
-    ).toBeInTheDocument()
+    expect(onStepChange).toHaveBeenCalledWith('fold-back-wall')
 
     fireEvent.click(screen.getByRole('button', { name: 'Pause Sequence' }))
-    fireEvent.click(screen.getByRole('button', { name: /3Tray Ready/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Press tabs until secure/ }))
 
-    expect(
-      screen.getByText(
-        'Fold the corner tabs inward last, then secure them behind the front and back walls to lock the tray shape.',
-      ),
-    ).toBeInTheDocument()
+    expect(onStepChange).toHaveBeenCalledWith('press-secure-tabs')
     expect(screen.getByRole('button', { name: 'Play Sequence' })).toBeInTheDocument()
     expect(screen.getByText('Part Identification')).toBeInTheDocument()
     expect(screen.getByText('Page 1')).toBeInTheDocument()

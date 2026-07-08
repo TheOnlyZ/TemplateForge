@@ -1,7 +1,8 @@
-import { type ChangeEvent, useMemo, useRef, useState } from 'react'
+import { type ChangeEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { BoxAssemblyView } from '../assembly/BoxAssemblyView.tsx'
 import { buildAssemblyPartMappings } from '../assembly/mapping.ts'
-import type { AssemblyFaceId, AssemblySequenceStepId } from '../assembly/BoxAssemblyView.tsx'
+import { buildBoxAssemblyModel } from '../assembly/model.ts'
+import type { AssemblyFaceId, AssemblyMode, AssemblySequenceStepId } from '../assembly/model.ts'
 import { TemplatePreview } from '../preview/TemplatePreview.tsx'
 import { BoxWizard } from '../wizard/box-wizard/BoxWizard.tsx'
 import {
@@ -20,7 +21,7 @@ import {
 import { layoutTemplate } from '../../domain/layout/index.ts'
 import { getMaterialDefinition } from '../../domain/materials/index.ts'
 import { getPaperDefinition, type Orientation, type OrientationPreference } from '../../domain/paper/index.ts'
-import { generateBoxTemplate, type BoxStyle } from '../../domain/shapes/box/index.ts'
+import { generateBoxTemplate } from '../../domain/shapes/box/index.ts'
 import { formatLength } from '../../domain/units/index.ts'
 import {
   DEFAULT_MAX_DIMENSION_MM,
@@ -95,93 +96,6 @@ function hasBlockingIssues(messages: ReturnType<typeof buildDraftPreview>['valid
   return messages.some((message) => message.severity === 'error')
 }
 
-function getFaceHighlightTargets(template: ReturnType<typeof buildDraftPreview>['template'], style: BoxStyle) {
-  const frontPanel = template.panels.find((panel) => panel.name === (style === 'open-tray' ? 'Front Wall' : 'Front Panel'))
-  const sidePanel = template.panels.find((panel) => panel.name === (style === 'open-tray' ? 'Right Wall' : 'Right Panel'))
-  const topTargetIds =
-    style === 'open-tray'
-      ? template.panels.filter((panel) => panel.name === 'Base').map((panel) => panel.id)
-      : template.tabs.filter((tab) => tab.label?.startsWith('Top ')).map((tab) => tab.id)
-
-  return {
-    front: frontPanel === undefined ? [] : [frontPanel.id],
-    side: sidePanel === undefined ? [] : [sidePanel.id],
-    top: topTargetIds,
-  } satisfies Record<AssemblyFaceId, string[]>
-}
-
-function getFoldGuidanceTargets(
-  template: ReturnType<typeof buildDraftPreview>['template'],
-  style: BoxStyle,
-  stepId: AssemblySequenceStepId | null,
-) {
-  if (stepId === null) {
-    return {
-      foldIds: [],
-      targetIds: [],
-    }
-  }
-
-  if (style === 'open-tray') {
-    if (stepId === 'flat-setup') {
-      return {
-        foldIds: template.foldLines
-          .filter((line) => line.id.includes('front-wall') || line.id.includes('back-wall'))
-          .map((line) => line.id),
-        targetIds: template.panels
-          .filter((panel) => panel.name === 'Front Wall' || panel.name === 'Back Wall')
-          .map((panel) => panel.id),
-      }
-    }
-
-    if (stepId === 'walls-rising') {
-      return {
-        foldIds: template.foldLines
-          .filter((line) => line.id.includes('left-wall') || line.id.includes('right-wall'))
-          .map((line) => line.id),
-        targetIds: template.panels
-          .filter((panel) => panel.name === 'Left Wall' || panel.name === 'Right Wall')
-          .map((panel) => panel.id),
-      }
-    }
-
-    return {
-      foldIds: template.foldLines.filter((line) => line.id.includes('tab-')).map((line) => line.id),
-      targetIds: template.tabs.map((tab) => tab.id),
-    }
-  }
-
-  if (stepId === 'wrap-body') {
-    return {
-      foldIds: template.foldLines
-        .filter(
-          (line) =>
-            line.id.includes('front-right') ||
-            line.id.includes('right-back') ||
-            line.id.includes('back-left'),
-        )
-        .map((line) => line.id),
-      targetIds: template.panels.map((panel) => panel.id),
-    }
-  }
-
-  if (stepId === 'square-shell') {
-    return {
-      foldIds: template.foldLines.filter((line) => line.id.includes('glue-seam')).map((line) => line.id),
-      targetIds: template.tabs.filter((tab) => tab.label === 'Glue Seam').map((tab) => tab.id),
-    }
-  }
-
-  return {
-    foldIds: template.foldLines
-      .filter((line) => line.id.includes('top-') || line.id.includes('bottom-'))
-      .map((line) => line.id),
-    targetIds: template.tabs
-      .filter((tab) => tab.label?.startsWith('Top ') || tab.label?.startsWith('Bottom '))
-      .map((tab) => tab.id),
-  }
-}
-
 export function WorkspacePage() {
   const {
     draft,
@@ -194,43 +108,61 @@ export function WorkspacePage() {
     startEditingQueueItem,
     unitSystem,
   } = useAppStore()
-  const preview = buildDraftPreview(draft, 'preview-draft')
+  const preview = useMemo(() => buildDraftPreview(draft, 'preview-draft'), [draft])
   const primaryPart = preview.template.parts[0]!
   const draftMaterial = getMaterialDefinition(draft.materialId)
   const canExportPreviewSvg = !hasBlockingIssues(preview.shapeValidation.messages)
   const canExportPreviewPdf = !hasBlockingIssues(preview.validation.messages)
   const projectFileInputRef = useRef<HTMLInputElement | null>(null)
-  const [highlightedAssemblyFaceId, setHighlightedAssemblyFaceId] = useState<AssemblyFaceId | null>(null)
+  const [assemblyMode, setAssemblyMode] = useState<AssemblyMode>('finished')
+  const [hoveredAssemblyFaceId, setHoveredAssemblyFaceId] = useState<AssemblyFaceId | null>(null)
+  const [selectedAssemblyFaceId, setSelectedAssemblyFaceId] = useState<AssemblyFaceId | null>(null)
   const [activeAssemblyStepId, setActiveAssemblyStepId] = useState<AssemblySequenceStepId | null>(null)
   const editingQueueItem =
     editingQueueItemId === null
       ? null
       : queueItems.find((item) => item.id === editingQueueItemId) ?? null
-  const faceHighlightTargets = useMemo(
-    () => getFaceHighlightTargets(preview.template, draft.boxInput.style),
+  const assemblyModel = useMemo(
+    () => buildBoxAssemblyModel(preview.template, draft.boxInput.style),
     [draft.boxInput.style, preview.template],
   )
   const assemblyPartMappings = useMemo(
     () => buildAssemblyPartMappings(preview.template, preview.layout),
     [preview.layout, preview.template],
   )
-  const foldGuidanceTargets = useMemo(
-    () => getFoldGuidanceTargets(preview.template, draft.boxInput.style, activeAssemblyStepId),
-    [activeAssemblyStepId, draft.boxInput.style, preview.template],
+  const activeAssemblyStep = useMemo(
+    () => assemblyModel.steps.find((step) => step.id === activeAssemblyStepId) ?? assemblyModel.steps[0] ?? null,
+    [activeAssemblyStepId, assemblyModel.steps],
   )
+
+  useEffect(() => {
+    setAssemblyMode(assemblyModel.defaultMode)
+    setHoveredAssemblyFaceId(null)
+    setSelectedAssemblyFaceId(null)
+    setActiveAssemblyStepId(assemblyModel.steps[0]?.id ?? null)
+  }, [assemblyModel])
+
+  const effectiveAssemblyFaceId =
+    hoveredAssemblyFaceId ??
+    selectedAssemblyFaceId ??
+    (assemblyMode === 'sequence' ? activeAssemblyStep?.focusFaceId ?? null : null)
   const highlightedTargetIds = useMemo(
     () =>
-      highlightedAssemblyFaceId === null
-        ? foldGuidanceTargets.targetIds.length === 0
-          ? undefined
-          : new Set(foldGuidanceTargets.targetIds)
-        : new Set(faceHighlightTargets[highlightedAssemblyFaceId]),
-    [faceHighlightTargets, foldGuidanceTargets.targetIds, highlightedAssemblyFaceId],
+      effectiveAssemblyFaceId === null
+        ? assemblyMode === 'sequence' && activeAssemblyStep !== null && activeAssemblyStep.targetIds.length > 0
+          ? new Set(activeAssemblyStep.targetIds)
+          : undefined
+        : new Set(
+            assemblyModel.faces.find((face) => face.id === effectiveAssemblyFaceId)?.targetIds ?? [],
+          ),
+    [activeAssemblyStep, assemblyMode, assemblyModel.faces, effectiveAssemblyFaceId],
   )
   const highlightedFoldIds = useMemo(
     () =>
-      foldGuidanceTargets.foldIds.length === 0 ? undefined : new Set(foldGuidanceTargets.foldIds),
-    [foldGuidanceTargets.foldIds],
+      assemblyMode === 'sequence' && activeAssemblyStep !== null && activeAssemblyStep.foldIds.length > 0
+        ? new Set(activeAssemblyStep.foldIds)
+        : undefined,
+    [activeAssemblyStep, assemblyMode],
   )
   const exportableQueueItems = queueItems
     .map((item) => ({ item, result: buildDraftPreview(item, item.id) }))
@@ -413,7 +345,7 @@ export function WorkspacePage() {
             </button>
           </div>
           <p className="toolbar-note">
-            Current slice: project save/reopen, grouped exports, tiled print layouts, and an interactive 3D assembly sequence.
+            Current slice: finished-object-first assembly modes, synchronized 2D/3D guidance, and unit-correct box input.
           </p>
         </div>
       </header>
@@ -451,26 +383,6 @@ export function WorkspacePage() {
               </div>
             </article>
 
-            <aside className="detail-card">
-              <h3>Guardrails</h3>
-              <div className="detail-grid">
-                <div>
-                  <span className="meta-label">Minimum supported dimension</span>
-                  <strong>{formatLength(DEFAULT_MIN_DIMENSION_MM, unitSystem)}</strong>
-                </div>
-                <div>
-                  <span className="meta-label">Maximum supported dimension</span>
-                  <strong>{formatLength(DEFAULT_MAX_DIMENSION_MM, unitSystem)}</strong>
-                </div>
-                <div>
-                  <span className="meta-label">Current part envelope</span>
-                  <strong>
-                    {formatLength(primaryPart.bounds.width, unitSystem)} ×{' '}
-                    {formatLength(primaryPart.bounds.height, unitSystem)}
-                  </strong>
-                </div>
-              </div>
-            </aside>
           </div>
 
           <article className="canvas-placeholder">
@@ -484,9 +396,15 @@ export function WorkspacePage() {
                   </p>
                 </div>
                 <TemplatePreview
+                  faceLabelLookup={assemblyModel.targetIdToFaceLabel}
+                  faceTargetLookup={assemblyModel.targetIdToFaceId}
+                  glueTabIds={assemblyModel.glueTabIds}
+                  selectedFaceId={selectedAssemblyFaceId}
                   template={preview.template}
                   highlightedFoldIds={highlightedFoldIds}
                   highlightedTargetIds={highlightedTargetIds}
+                  onFaceHoverChange={setHoveredAssemblyFaceId}
+                  onFaceSelect={setSelectedAssemblyFaceId}
                 />
               </div>
               <div className="preview-stage">
@@ -499,12 +417,18 @@ export function WorkspacePage() {
                   </p>
                 </div>
                 <BoxAssemblyView
-                  activeFaceId={highlightedAssemblyFaceId}
+                  activeFaceId={effectiveAssemblyFaceId}
+                  activeStepId={activeAssemblyStep?.id ?? null}
                   name={draft.name}
                   boxInput={draft.boxInput}
-                  onFaceHighlightChange={setHighlightedAssemblyFaceId}
-                  onSequenceStepChange={setActiveAssemblyStepId}
+                  mode={assemblyMode}
+                  model={assemblyModel}
+                  onFaceHoverChange={setHoveredAssemblyFaceId}
+                  onFaceSelect={setSelectedAssemblyFaceId}
+                  onModeChange={setAssemblyMode}
+                  onStepChange={setActiveAssemblyStepId}
                   partMappings={assemblyPartMappings}
+                  selectedFaceId={selectedAssemblyFaceId}
                   unitSystem={unitSystem}
                 />
               </div>
@@ -540,6 +464,27 @@ export function WorkspacePage() {
                     ? 'Current draft fits height.'
                     : 'Current draft exceeds height.'}
                 </p>
+              </div>
+            </div>
+          </article>
+
+          <article className="panel-card support-card">
+            <h3>Guardrails</h3>
+            <div className="detail-grid">
+              <div>
+                <span className="meta-label">Minimum supported dimension</span>
+                <strong>{formatLength(DEFAULT_MIN_DIMENSION_MM, unitSystem)}</strong>
+              </div>
+              <div>
+                <span className="meta-label">Maximum supported dimension</span>
+                <strong>{formatLength(DEFAULT_MAX_DIMENSION_MM, unitSystem)}</strong>
+              </div>
+              <div>
+                <span className="meta-label">Current part envelope</span>
+                <strong>
+                  {formatLength(primaryPart.bounds.width, unitSystem)} ×{' '}
+                  {formatLength(primaryPart.bounds.height, unitSystem)}
+                </strong>
               </div>
             </div>
           </article>

@@ -10,6 +10,10 @@ describe('app store queue editing', () => {
     resetStore()
   })
 
+  it('defaults new projects to US Letter paper', () => {
+    expect(useAppStore.getState().draft.paperSizeId).toBe('letter')
+  })
+
   it('loads a queued item into the draft for editing', () => {
     useAppStore.getState().setDraftName('Queued Box')
     useAppStore.getState().setDraftDimension('externalLengthMm', 150)

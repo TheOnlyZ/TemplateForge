@@ -53,7 +53,7 @@ npm run build
 
 ## Current Focus
 
-The current implementation now covers all seven planned roadmap phases. The Future Vision items remain intentionally deferred for a later pass.
+The current implementation now covers all seven planned roadmap phases and a comprehension-first box assembly workflow: unit-correct input, finished-object-first assembly modes, bidirectional 2D/3D highlighting, guided fold sequencing, and less intrusive guardrails. The Future Vision items remain intentionally deferred for a later pass.
 
 ## Roadmap
 

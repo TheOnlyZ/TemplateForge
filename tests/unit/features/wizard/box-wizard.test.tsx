@@ -1,0 +1,49 @@
+import { fireEvent, render, screen } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { generateBoxTemplate } from '../../../../src/domain/shapes/box/index.ts'
+import { createDefaultProjectState, useAppStore } from '../../../../src/store/app-store.ts'
+import { BoxWizard } from '../../../../src/features/wizard/box-wizard/BoxWizard.tsx'
+
+function resetStore() {
+  useAppStore.setState(createDefaultProjectState())
+}
+
+describe('BoxWizard', () => {
+  beforeEach(() => {
+    resetStore()
+  })
+
+  it('interprets entered dimension values in imperial mode as inches', () => {
+    useAppStore.setState({ unitSystem: 'imperial' })
+    const { template } = generateBoxTemplate(
+      {
+        externalLengthMm: 120,
+        externalWidthMm: 80,
+        externalHeightMm: 24,
+        glueTabWidthMm: 12,
+        style: 'open-tray',
+      },
+      {
+        itemId: 'wizard-preview',
+        itemName: 'Wizard Preview',
+      },
+    )
+
+    render(
+      <BoxWizard
+        unitSystem="imperial"
+        previewTemplate={template}
+        canExportPreviewPdf={true}
+        canExportPreviewSvg={true}
+        onExportPreviewPdf={vi.fn()}
+        onExportPreviewSvg={vi.fn()}
+      />,
+    )
+
+    const lengthInput = screen.getByLabelText(/External length \(in\)/)
+
+    fireEvent.change(lengthInput, { target: { value: '5' } })
+
+    expect(useAppStore.getState().draft.boxInput.externalLengthMm).toBeCloseTo(127, 3)
+  })
+})

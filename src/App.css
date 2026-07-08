@@ -103,7 +103,7 @@
 
 .workspace-intro {
   display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(18rem, 1fr);
+  grid-template-columns: 1fr;
   gap: 1rem;
 }
 
@@ -282,6 +282,12 @@
   stroke-width: 1.4;
 }
 
+.template-preview__panel.is-interactive,
+.template-preview__tab.is-interactive,
+.template-preview__label.is-interactive {
+  cursor: pointer;
+}
+
 .template-preview__cut,
 .template-preview__tab {
   fill: none;
@@ -298,6 +304,17 @@
 .template-preview__tab.is-highlighted {
   stroke: #a8c4ff;
   stroke-width: 1.9;
+}
+
+.template-preview__tab.is-glue {
+  stroke: rgba(255, 176, 87, 0.82);
+  opacity: 0.72;
+}
+
+.template-preview__tab.is-glue.is-highlighted {
+  stroke: #ffc98a;
+  stroke-width: 2;
+  opacity: 1;
 }
 
 .template-preview__fold {
@@ -336,8 +353,8 @@
   min-height: 24rem;
   border-radius: 0.875rem;
   background:
-    radial-gradient(circle at top left, rgba(122, 162, 255, 0.18), transparent 30%),
-    linear-gradient(180deg, rgba(15, 23, 35, 0.98), rgba(10, 15, 24, 0.96));
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.06), transparent 28%),
+    linear-gradient(180deg, rgba(20, 26, 35, 0.98), rgba(12, 16, 23, 0.96));
 }
 
 .assembly-view__shadow {
@@ -356,19 +373,31 @@
 }
 
 .assembly-view__face--front {
-  fill: rgba(77, 108, 196, 0.84);
+  fill: rgba(124, 132, 146, 0.88);
+}
+
+.assembly-view__face--back {
+  fill: rgba(90, 98, 110, 0.78);
+}
+
+.assembly-view__face--left {
+  fill: rgba(98, 106, 118, 0.82);
 }
 
 .assembly-view__face--side {
-  fill: rgba(43, 66, 134, 0.88);
+  fill: rgba(92, 101, 114, 0.86);
 }
 
 .assembly-view__face--top {
-  fill: rgba(116, 143, 225, 0.92);
+  fill: rgba(146, 154, 166, 0.92);
 }
 
 .assembly-view__face--rim {
-  fill: rgba(99, 126, 206, 0.92);
+  fill: rgba(138, 146, 158, 0.9);
+}
+
+.assembly-view__face--base {
+  fill: rgba(76, 82, 94, 0.9);
 }
 
 .assembly-view__opening {
@@ -417,6 +446,11 @@
   stroke: rgba(207, 224, 255, 0.92);
   stroke-width: 1.8;
   filter: drop-shadow(0 0 10px rgba(122, 162, 255, 0.18));
+  fill: rgba(91, 134, 223, 0.92);
+}
+
+.assembly-view__face.is-transparent {
+  opacity: 0.58;
 }
 
 .assembly-view__opening.is-highlighted {
@@ -436,6 +470,25 @@
   gap: 0.5rem;
 }
 
+.assembly-view__mode-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.assembly-view__summary-card {
+  padding: 0.95rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.9rem;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.assembly-view__summary-card p {
+  margin: 0.35rem 0 0;
+  color: var(--muted-text);
+}
+
 .assembly-view__sequence-header {
   display: flex;
   justify-content: space-between;
@@ -450,6 +503,30 @@
 
 .assembly-view__controls {
   width: auto;
+}
+
+.assembly-view__cue-line {
+  fill: none;
+  stroke: rgba(167, 187, 214, 0.72);
+  stroke-width: 1.2;
+  stroke-dasharray: 4 3;
+}
+
+.assembly-view__cue-arrow {
+  fill: rgba(167, 187, 214, 0.82);
+}
+
+.assembly-view__cue-badge rect {
+  fill: rgba(35, 46, 64, 0.94);
+  stroke: rgba(122, 162, 255, 0.46);
+  stroke-width: 1;
+}
+
+.assembly-view__cue-badge text {
+  fill: #f4f7fb;
+  font-size: 10px;
+  font-weight: 600;
+  text-anchor: middle;
 }
 
 .assembly-view__steps {
@@ -499,7 +576,7 @@
 
 .assembly-view__step {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.55rem;
   width: 100%;
   padding: 0.7rem 0.85rem;
@@ -520,9 +597,27 @@
   font-size: 0.8rem;
 }
 
+.assembly-view__step strong {
+  display: block;
+  margin-bottom: 0.2rem;
+}
+
+.assembly-view__step small {
+  color: var(--muted-text);
+}
+
 .assembly-view__step.active {
   background: var(--accent-bg);
   border-color: var(--accent-border);
+}
+
+.assembly-view__step.active small {
+  color: rgba(244, 247, 251, 0.8);
+}
+
+.support-card {
+  padding: 0.95rem 1rem;
+  background: rgba(255, 255, 255, 0.015);
 }
 
 .queue-item {
