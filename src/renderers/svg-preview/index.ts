@@ -12,6 +12,7 @@ export interface PreviewLabel {
   text: string
   x: number
   y: number
+  targetIds: string[]
 }
 
 export interface PreviewScene {
@@ -72,6 +73,7 @@ function buildLabel(annotation: Annotation): PreviewLabel {
     text: annotation.text,
     x: annotation.position.x,
     y: annotation.position.y,
+    targetIds: annotation.targetIds,
   }
 }
 

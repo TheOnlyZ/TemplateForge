@@ -1,4 +1,6 @@
-import { type ChangeEvent, useRef } from 'react'
+import { type ChangeEvent, useMemo, useRef, useState } from 'react'
+import { BoxAssemblyView } from '../assembly/BoxAssemblyView.tsx'
+import type { AssemblyFaceId, AssemblySequenceStepId } from '../assembly/BoxAssemblyView.tsx'
 import { TemplatePreview } from '../preview/TemplatePreview.tsx'
 import { BoxWizard } from '../wizard/box-wizard/BoxWizard.tsx'
 import {
@@ -17,7 +19,7 @@ import {
 import { layoutTemplate } from '../../domain/layout/index.ts'
 import { getMaterialDefinition } from '../../domain/materials/index.ts'
 import { getPaperDefinition, type Orientation, type OrientationPreference } from '../../domain/paper/index.ts'
-import { generateBoxTemplate } from '../../domain/shapes/box/index.ts'
+import { generateBoxTemplate, type BoxStyle } from '../../domain/shapes/box/index.ts'
 import { formatLength } from '../../domain/units/index.ts'
 import {
   DEFAULT_MAX_DIMENSION_MM,
@@ -92,6 +94,93 @@ function hasBlockingIssues(messages: ReturnType<typeof buildDraftPreview>['valid
   return messages.some((message) => message.severity === 'error')
 }
 
+function getFaceHighlightTargets(template: ReturnType<typeof buildDraftPreview>['template'], style: BoxStyle) {
+  const frontPanel = template.panels.find((panel) => panel.name === (style === 'open-tray' ? 'Front Wall' : 'Front Panel'))
+  const sidePanel = template.panels.find((panel) => panel.name === (style === 'open-tray' ? 'Right Wall' : 'Right Panel'))
+  const topTargetIds =
+    style === 'open-tray'
+      ? template.panels.filter((panel) => panel.name === 'Base').map((panel) => panel.id)
+      : template.tabs.filter((tab) => tab.label?.startsWith('Top ')).map((tab) => tab.id)
+
+  return {
+    front: frontPanel === undefined ? [] : [frontPanel.id],
+    side: sidePanel === undefined ? [] : [sidePanel.id],
+    top: topTargetIds,
+  } satisfies Record<AssemblyFaceId, string[]>
+}
+
+function getFoldGuidanceTargets(
+  template: ReturnType<typeof buildDraftPreview>['template'],
+  style: BoxStyle,
+  stepId: AssemblySequenceStepId | null,
+) {
+  if (stepId === null) {
+    return {
+      foldIds: [],
+      targetIds: [],
+    }
+  }
+
+  if (style === 'open-tray') {
+    if (stepId === 'flat-setup') {
+      return {
+        foldIds: template.foldLines
+          .filter((line) => line.id.includes('front-wall') || line.id.includes('back-wall'))
+          .map((line) => line.id),
+        targetIds: template.panels
+          .filter((panel) => panel.name === 'Front Wall' || panel.name === 'Back Wall')
+          .map((panel) => panel.id),
+      }
+    }
+
+    if (stepId === 'walls-rising') {
+      return {
+        foldIds: template.foldLines
+          .filter((line) => line.id.includes('left-wall') || line.id.includes('right-wall'))
+          .map((line) => line.id),
+        targetIds: template.panels
+          .filter((panel) => panel.name === 'Left Wall' || panel.name === 'Right Wall')
+          .map((panel) => panel.id),
+      }
+    }
+
+    return {
+      foldIds: template.foldLines.filter((line) => line.id.includes('tab-')).map((line) => line.id),
+      targetIds: template.tabs.map((tab) => tab.id),
+    }
+  }
+
+  if (stepId === 'wrap-body') {
+    return {
+      foldIds: template.foldLines
+        .filter(
+          (line) =>
+            line.id.includes('front-right') ||
+            line.id.includes('right-back') ||
+            line.id.includes('back-left'),
+        )
+        .map((line) => line.id),
+      targetIds: template.panels.map((panel) => panel.id),
+    }
+  }
+
+  if (stepId === 'square-shell') {
+    return {
+      foldIds: template.foldLines.filter((line) => line.id.includes('glue-seam')).map((line) => line.id),
+      targetIds: template.tabs.filter((tab) => tab.label === 'Glue Seam').map((tab) => tab.id),
+    }
+  }
+
+  return {
+    foldIds: template.foldLines
+      .filter((line) => line.id.includes('top-') || line.id.includes('bottom-'))
+      .map((line) => line.id),
+    targetIds: template.tabs
+      .filter((tab) => tab.label?.startsWith('Top ') || tab.label?.startsWith('Bottom '))
+      .map((tab) => tab.id),
+  }
+}
+
 export function WorkspacePage() {
   const {
     draft,
@@ -110,10 +199,34 @@ export function WorkspacePage() {
   const canExportPreviewSvg = !hasBlockingIssues(preview.shapeValidation.messages)
   const canExportPreviewPdf = !hasBlockingIssues(preview.validation.messages)
   const projectFileInputRef = useRef<HTMLInputElement | null>(null)
+  const [highlightedAssemblyFaceId, setHighlightedAssemblyFaceId] = useState<AssemblyFaceId | null>(null)
+  const [activeAssemblyStepId, setActiveAssemblyStepId] = useState<AssemblySequenceStepId | null>(null)
   const editingQueueItem =
     editingQueueItemId === null
       ? null
       : queueItems.find((item) => item.id === editingQueueItemId) ?? null
+  const faceHighlightTargets = useMemo(
+    () => getFaceHighlightTargets(preview.template, draft.boxInput.style),
+    [draft.boxInput.style, preview.template],
+  )
+  const foldGuidanceTargets = useMemo(
+    () => getFoldGuidanceTargets(preview.template, draft.boxInput.style, activeAssemblyStepId),
+    [activeAssemblyStepId, draft.boxInput.style, preview.template],
+  )
+  const highlightedTargetIds = useMemo(
+    () =>
+      highlightedAssemblyFaceId === null
+        ? foldGuidanceTargets.targetIds.length === 0
+          ? undefined
+          : new Set(foldGuidanceTargets.targetIds)
+        : new Set(faceHighlightTargets[highlightedAssemblyFaceId]),
+    [faceHighlightTargets, foldGuidanceTargets.targetIds, highlightedAssemblyFaceId],
+  )
+  const highlightedFoldIds = useMemo(
+    () =>
+      foldGuidanceTargets.foldIds.length === 0 ? undefined : new Set(foldGuidanceTargets.foldIds),
+    [foldGuidanceTargets.foldIds],
+  )
   const exportableQueueItems = queueItems
     .map((item) => ({ item, result: buildDraftPreview(item, item.id) }))
     .filter((entry) => !hasBlockingIssues(entry.result.validation.messages))
@@ -295,7 +408,7 @@ export function WorkspacePage() {
             </button>
           </div>
           <p className="toolbar-note">
-            Current slice: project save/reopen, queue editing and duplication, grouped exports, and tiled print layouts with assembly guidance.
+            Current slice: project save/reopen, grouped exports, tiled print layouts, and an interactive 3D assembly sequence.
           </p>
         </div>
       </header>
@@ -356,15 +469,39 @@ export function WorkspacePage() {
           </div>
 
           <article className="canvas-placeholder">
-            <div className="canvas-content canvas-content--preview">
-              <div>
-                <h3>Live Template Preview</h3>
-                <p>
-                  Generated from canonical template data. This is the same model the layout engine
-                  plus the PDF and SVG renderers consume.
-                </p>
+            <div className="canvas-content canvas-content--preview-grid">
+              <div className="preview-stage">
+                <div>
+                  <h3>Live Template Preview</h3>
+                  <p>
+                    Generated from canonical template data. This is the same model the layout engine
+                    plus the PDF and SVG renderers consume.
+                  </p>
+                </div>
+                <TemplatePreview
+                  template={preview.template}
+                  highlightedFoldIds={highlightedFoldIds}
+                  highlightedTargetIds={highlightedTargetIds}
+                />
               </div>
-              <TemplatePreview template={preview.template} />
+              <div className="preview-stage">
+                <div>
+                  <h3>3D Assembly View</h3>
+                  <p>
+                    Isometric assembled-form preview driven by the current box dimensions and style
+                    selection. Sequence steps now drive fold guidance while face hover still spotlights
+                    matching template regions.
+                  </p>
+                </div>
+                <BoxAssemblyView
+                  activeFaceId={highlightedAssemblyFaceId}
+                  name={draft.name}
+                  boxInput={draft.boxInput}
+                  onFaceHighlightChange={setHighlightedAssemblyFaceId}
+                  onSequenceStepChange={setActiveAssemblyStepId}
+                  unitSystem={unitSystem}
+                />
+              </div>
             </div>
           </article>
 

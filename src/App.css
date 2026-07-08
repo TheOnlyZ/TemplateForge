@@ -241,6 +241,20 @@
   align-items: stretch;
 }
 
+.canvas-content--preview-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.95fr);
+  gap: 1rem;
+  align-items: stretch;
+  text-align: left;
+}
+
+.preview-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
 .template-preview {
   width: 100%;
   min-height: 24rem;
@@ -256,6 +270,16 @@
   fill: rgba(122, 162, 255, 0.12);
   stroke: rgba(122, 162, 255, 0.2);
   stroke-width: 1;
+  transition:
+    fill 140ms ease,
+    stroke 140ms ease,
+    stroke-width 140ms ease;
+}
+
+.template-preview__panel.is-highlighted {
+  fill: rgba(122, 162, 255, 0.28);
+  stroke: rgba(163, 196, 255, 0.78);
+  stroke-width: 1.4;
 }
 
 .template-preview__cut,
@@ -267,11 +291,26 @@
   stroke-linecap: round;
 }
 
+.template-preview__tab {
+  transition: stroke 140ms ease, stroke-width 140ms ease;
+}
+
+.template-preview__tab.is-highlighted {
+  stroke: #a8c4ff;
+  stroke-width: 1.9;
+}
+
 .template-preview__fold {
   fill: none;
   stroke: #7aa2ff;
   stroke-width: 1.2;
   stroke-dasharray: 6 4;
+  transition: stroke 140ms ease, stroke-width 140ms ease;
+}
+
+.template-preview__fold.is-highlighted {
+  stroke: #d8e4ff;
+  stroke-width: 1.9;
 }
 
 .template-preview__label {
@@ -279,6 +318,172 @@
   font-size: 11px;
   text-anchor: middle;
   dominant-baseline: middle;
+  transition: fill 140ms ease;
+}
+
+.template-preview__label.is-highlighted {
+  fill: #cfe0ff;
+}
+
+.assembly-view {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.assembly-view__scene {
+  width: 100%;
+  min-height: 24rem;
+  border-radius: 0.875rem;
+  background:
+    radial-gradient(circle at top left, rgba(122, 162, 255, 0.18), transparent 30%),
+    linear-gradient(180deg, rgba(15, 23, 35, 0.98), rgba(10, 15, 24, 0.96));
+}
+
+.assembly-view__shadow {
+  fill: rgba(7, 10, 17, 0.46);
+}
+
+.assembly-view__face {
+  stroke: rgba(244, 247, 251, 0.2);
+  stroke-width: 1;
+  stroke-linejoin: round;
+  transition:
+    fill 140ms ease,
+    stroke 140ms ease,
+    stroke-width 140ms ease,
+    filter 140ms ease;
+}
+
+.assembly-view__face--front {
+  fill: rgba(77, 108, 196, 0.84);
+}
+
+.assembly-view__face--side {
+  fill: rgba(43, 66, 134, 0.88);
+}
+
+.assembly-view__face--top {
+  fill: rgba(116, 143, 225, 0.92);
+}
+
+.assembly-view__face--rim {
+  fill: rgba(99, 126, 206, 0.92);
+}
+
+.assembly-view__opening {
+  fill: rgba(8, 13, 22, 0.88);
+  stroke: rgba(244, 247, 251, 0.12);
+  stroke-width: 1;
+  transition: stroke 140ms ease, fill 140ms ease;
+}
+
+.assembly-view__rim-line,
+.assembly-view__closure-line {
+  fill: none;
+  stroke: rgba(244, 247, 251, 0.34);
+  stroke-width: 1.1;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  transition: stroke 140ms ease, stroke-width 140ms ease;
+}
+
+.assembly-view__closure-line {
+  stroke-dasharray: 6 4;
+}
+
+.assembly-view__face-label {
+  fill: #f4f7fb;
+  font-size: 11px;
+  font-weight: 600;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  transition: fill 140ms ease;
+}
+
+.assembly-view__face-label--muted {
+  fill: rgba(244, 247, 251, 0.75);
+}
+
+.assembly-view__face-group {
+  cursor: pointer;
+}
+
+.assembly-view__face-group:focus-visible {
+  outline: none;
+}
+
+.assembly-view__face.is-highlighted {
+  stroke: rgba(207, 224, 255, 0.92);
+  stroke-width: 1.8;
+  filter: drop-shadow(0 0 10px rgba(122, 162, 255, 0.18));
+}
+
+.assembly-view__opening.is-highlighted {
+  stroke: rgba(207, 224, 255, 0.52);
+  fill: rgba(15, 24, 38, 0.92);
+}
+
+.assembly-view__rim-line.is-highlighted,
+.assembly-view__closure-line.is-highlighted {
+  stroke: rgba(207, 224, 255, 0.76);
+  stroke-width: 1.45;
+}
+
+.assembly-view__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.assembly-view__sequence-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.9rem;
+}
+
+.assembly-view__sequence-header p {
+  margin: 0.35rem 0 0;
+  color: var(--muted-text);
+}
+
+.assembly-view__controls {
+  width: auto;
+}
+
+.assembly-view__steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.assembly-view__step {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  padding: 0.7rem 0.85rem;
+  text-align: left;
+  border: 1px solid var(--border);
+  border-radius: 0.85rem;
+  background: var(--surface-elevated);
+  color: var(--text-h);
+}
+
+.assembly-view__step span {
+  display: inline-grid;
+  place-items: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 999px;
+  background: rgba(153, 167, 187, 0.14);
+  font-size: 0.8rem;
+}
+
+.assembly-view__step.active {
+  background: var(--accent-bg);
+  border-color: var(--accent-border);
 }
 
 .queue-item {
@@ -424,6 +629,10 @@
   .workspace-intro {
     grid-template-columns: 1fr;
   }
+
+  .canvas-content--preview-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 720px) {
@@ -452,6 +661,15 @@
 
   .wizard-steps {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .assembly-view__sequence-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .assembly-view__steps {
+    grid-template-columns: 1fr;
   }
 
   .workspace {

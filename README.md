@@ -40,6 +40,7 @@ This repository is now beyond the foundation phase. The current implementation e
 - cylinder generation with seam and alignment guidance
 - tiled multi-page layout with registration and assembly aids
 - project queueing, batch export, nesting, save/reopen, duplication, and editing
+- a first interactive assembly slice with 3D box visualization, face highlighting, animated sequencing, and fold guidance
 
 ## Commands
 
@@ -52,7 +53,7 @@ npm run build
 
 ## Current Focus
 
-The current implementation now covers Phases 1 through 5. The next active build slice is Phase 6: interactive assembly workflows, starting with a first 3D assembly view.
+The current implementation now covers Phases 1 through 5 plus the first four Phase 6 slices: a box-focused 3D assembly view with face-to-template highlighting, animated sequencing, and interactive fold guidance. The next active build slice is part identification and page mapping within the assembly workflow.
 
 ## Roadmap
 
@@ -91,11 +92,11 @@ The current implementation now covers Phases 1 through 5. The next active build 
 - [x] Save and reopen projects
 - [x] Shape duplication and editing
 
-### Phase 6 — Interactive Assembly
-- [ ] 3D Assembly View
-- [ ] Face-to-template highlighting
-- [ ] Animated assembly sequence
-- [ ] Interactive folding guidance
+### Phase 6 — Interactive Assembly *(In Progress)*
+- [x] 3D Assembly View
+- [x] Face-to-template highlighting
+- [x] Animated assembly sequence
+- [x] Interactive folding guidance
 - [ ] Part identification and page mapping
 
 ### Phase 7 — Expanded Shape Library
