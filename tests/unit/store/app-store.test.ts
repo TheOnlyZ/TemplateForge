@@ -10,8 +10,12 @@ describe('app store queue editing', () => {
     resetStore()
   })
 
-  it('defaults new projects to US Letter paper', () => {
-    expect(useAppStore.getState().draft.paperSizeId).toBe('letter')
+  it('defaults new projects to US Letter paper and box shape', () => {
+    const state = useAppStore.getState()
+
+    expect(state.draft.paperSizeId).toBe('letter')
+    expect(state.draft.shapeType).toBe('box')
+    expect(state.draft.cylinderInput).toEqual({ diameterMm: 60, heightMm: 100 })
   })
 
   it('loads a queued item into the draft for editing', () => {
@@ -96,5 +100,20 @@ describe('app store queue editing', () => {
     expect(state.queueItems).toHaveLength(0)
     expect(state.editingQueueItemId).toBeNull()
     expect(state.draft.name).toBe('Rectangular Box 2')
+  })
+
+  it('switches between box and cylinder shape types and preserves inputs', () => {
+    useAppStore.getState().setDraftShapeType('cylinder')
+    useAppStore.getState().setDraftCylinderDimension('diameterMm', 80)
+
+    const state = useAppStore.getState()
+
+    expect(state.draft.shapeType).toBe('cylinder')
+    expect(state.draft.cylinderInput.diameterMm).toBe(80)
+
+    useAppStore.getState().setDraftShapeType('box')
+
+    expect(useAppStore.getState().draft.shapeType).toBe('box')
+    expect(useAppStore.getState().draft.boxInput.externalLengthMm).toBe(120)
   })
 })

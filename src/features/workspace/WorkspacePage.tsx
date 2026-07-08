@@ -1,8 +1,9 @@
 import { type ChangeEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { BoxAssemblyView } from '../assembly/BoxAssemblyView.tsx'
+import { CylinderAssemblyView } from '../assembly/CylinderAssemblyView.tsx'
 import { buildAssemblyPartMappings } from '../assembly/mapping.ts'
-import { buildBoxAssemblyModel } from '../assembly/model.ts'
-import type { AssemblyFaceId, AssemblyMode, AssemblySequenceStepId } from '../assembly/model.ts'
+import { buildBoxAssemblyModel, buildCylinderAssemblyModel } from '../assembly/model.ts'
+import type { AssemblyFaceId, AssemblyMode, AssemblySequenceStepId, AssemblyModel } from '../assembly/model.ts'
 import { TemplatePreview } from '../preview/TemplatePreview.tsx'
 import { BoxWizard } from '../wizard/box-wizard/BoxWizard.tsx'
 import {
@@ -21,33 +22,126 @@ import {
 import { layoutTemplate } from '../../domain/layout/index.ts'
 import { getMaterialDefinition } from '../../domain/materials/index.ts'
 import { getPaperDefinition, type Orientation, type OrientationPreference } from '../../domain/paper/index.ts'
-import { generateBoxTemplate } from '../../domain/shapes/box/index.ts'
+import { generateBoxTemplate, getBoxNetGenerator, type BoxNetType } from '../../domain/shapes/box/index.ts'
+import { generateCylinderTemplate } from '../../domain/shapes/cylinder/index.ts'
 import { formatLength } from '../../domain/units/index.ts'
 import {
   DEFAULT_MAX_DIMENSION_MM,
   DEFAULT_MIN_DIMENSION_MM,
   mergeValidationResults,
+  validateCylinderInput,
   validateLayoutResult,
   validateTemplateGeometry,
   validateTemplateInput,
 } from '../../domain/validation/index.ts'
 import { type BoxDraft, useAppStore } from '../../store/app-store.ts'
 
-function buildDraftPreview(draft: BoxDraft, templateId = `preview-${draft.boxInput.style}`) {
+const NET_ORDER: BoxNetType[] = ['strip', 'cross', 't-layout']
+
+function generateBoxTemplateWithNet(
+  input: { externalLengthMm: number; externalWidthMm: number; externalHeightMm: number; glueTabWidthMm: number; style: string },
+  context: { itemId: string; itemName: string },
+  netType: BoxNetType,
+) {
+  const boxInput = input as import('../../domain/shapes/box/index.ts').BoxInput
+  if (netType === 'strip') {
+    return generateBoxTemplate(boxInput, context)
+  }
+  const generator = getBoxNetGenerator(netType)
+  if (!generator) {
+    return generateBoxTemplate(boxInput, context)
+  }
+  return generator(boxInput, context)
+}
+
+function calculateTotalOverflow(layout: { printableAreaOverflow: boolean; pages: { printableBounds: { width: number; height: number }; partPlacements: { bounds: { x: number; y: number; width: number; height: number } }[] }[] }) {
+  if (!layout.printableAreaOverflow) return 0
+  let total = 0
+  for (const page of layout.pages) {
+    for (const pp of page.partPlacements) {
+      const b = pp.bounds
+      const bRight = b.x + b.width
+      const bBottom = b.y + b.height
+      if (bRight > page.printableBounds.width) total += bRight - page.printableBounds.width
+      if (bBottom > page.printableBounds.height) total += bBottom - page.printableBounds.height
+    }
+  }
+  return total
+}
+
+function buildDraftPreview(draft: BoxDraft, templateId?: string) {
   const paper = getPaperDefinition(draft.paperSizeId)
-  const { template } = generateBoxTemplate(draft.boxInput, {
-    itemId: templateId,
-    itemName: draft.name,
-  })
-  const layout = layoutTemplate(template, paper, draft.orientation, draft.margins)
-  const inputValidation = validateTemplateInput({
-    dimensionsMm: {
-      length: draft.boxInput.externalLengthMm,
-      width: draft.boxInput.externalWidthMm,
-      height: draft.boxInput.externalHeightMm,
-      glueTabWidth: draft.boxInput.glueTabWidthMm,
-    },
-  })
+  const tid = templateId ?? `preview-${draft.shapeType === 'cylinder' ? 'cylinder' : draft.boxInput.style}`
+
+  const isCylinder = draft.shapeType === 'cylinder'
+
+  if (isCylinder) {
+    const { template } = generateCylinderTemplate(draft.cylinderInput, {
+      itemId: tid,
+      itemName: draft.name,
+    })
+    const layout = layoutTemplate(template, paper, draft.orientation, draft.margins)
+    const inputValidation = validateCylinderInput({
+      diameterMm: draft.cylinderInput.diameterMm,
+      heightMm: draft.cylinderInput.heightMm,
+    })
+    const geometryValidation = validateTemplateGeometry(template)
+    const shapeValidation = mergeValidationResults(inputValidation, geometryValidation)
+    const layoutValidation = validateLayoutResult({
+      pageCount: layout.pageCount,
+      printableAreaOverflow: layout.printableAreaOverflow,
+      hasLegalPlacement: layout.hasLegalPlacement,
+      printableAreaWidthMm: layout.printableArea.width,
+      printableAreaHeightMm: layout.printableArea.height,
+      margins: draft.margins,
+    })
+    const validation = mergeValidationResults(shapeValidation, layoutValidation)
+    return { paper, template, layout, shapeValidation, validation, netType: null as BoxNetType | null }
+  }
+
+  const ctx = { itemId: tid, itemName: draft.name }
+  const input = draft.boxInput
+  let bestLayout = null as ReturnType<typeof layoutTemplate> | null
+  let bestTemplateItem = null as import('../../domain/templates/index.ts').TemplateItem | null
+  let bestNetType: BoxNetType = 'strip'
+
+  for (const netType of NET_ORDER) {
+    const result = generateBoxTemplateWithNet(input as any, ctx, netType)
+    const layout = layoutTemplate(result.template, paper, draft.orientation, draft.margins)
+
+    if (!layout.printableAreaOverflow) {
+      bestLayout = layout
+      bestTemplateItem = result.template
+      bestNetType = netType
+      break
+    }
+
+    if (
+      bestLayout === null ||
+      calculateTotalOverflow(layout) < calculateTotalOverflow(bestLayout)
+    ) {
+      bestLayout = layout
+      bestTemplateItem = result.template
+      bestNetType = netType
+    }
+  }
+
+  const template = bestTemplateItem!
+  const layout = bestLayout!
+  const inputValidation =
+    draft.shapeType === 'cylinder'
+      ? validateCylinderInput({
+          diameterMm: draft.cylinderInput.diameterMm,
+          heightMm: draft.cylinderInput.heightMm,
+        })
+      : validateTemplateInput({
+          dimensionsMm: {
+            length: draft.boxInput.externalLengthMm,
+            width: draft.boxInput.externalWidthMm,
+            height: draft.boxInput.externalHeightMm,
+            glueTabWidth: draft.boxInput.glueTabWidthMm,
+          },
+        })
   const geometryValidation = validateTemplateGeometry(template)
   const shapeValidation = mergeValidationResults(inputValidation, geometryValidation)
   const layoutValidation = validateLayoutResult({
@@ -60,7 +154,7 @@ function buildDraftPreview(draft: BoxDraft, templateId = `preview-${draft.boxInp
   })
   const validation = mergeValidationResults(shapeValidation, layoutValidation)
 
-  return { paper, template, layout, shapeValidation, validation }
+  return { paper, template, layout, shapeValidation, validation, netType: bestNetType }
 }
 
 function getStyleLabel(style: string) {
@@ -70,6 +164,10 @@ function getStyleLabel(style: string) {
 
   if (style === 'glue-tab-carton') {
     return 'Glue Tab Carton'
+  }
+
+  if (style === 'cylinder') {
+    return 'Straight Cylinder'
   }
 
   return 'Tuck Carton'
@@ -122,10 +220,13 @@ export function WorkspacePage() {
     editingQueueItemId === null
       ? null
       : queueItems.find((item) => item.id === editingQueueItemId) ?? null
-  const assemblyModel = useMemo(
-    () => buildBoxAssemblyModel(preview.template, draft.boxInput.style),
-    [draft.boxInput.style, preview.template],
-  )
+  const assemblyModel: AssemblyModel = useMemo(() => {
+    if (preview.template.shapeType === 'cylinder') {
+      return buildCylinderAssemblyModel(preview.template)
+    }
+
+    return buildBoxAssemblyModel(preview.template, draft.boxInput.style)
+  }, [draft.boxInput.style, preview.template])
   const assemblyPartMappings = useMemo(
     () => buildAssemblyPartMappings(preview.template, preview.layout),
     [preview.layout, preview.template],
@@ -345,44 +446,42 @@ export function WorkspacePage() {
             </button>
           </div>
           <p className="toolbar-note">
-            Current slice: finished-object-first assembly modes, synchronized 2D/3D guidance, and unit-correct box input.
+            Box and cylinder assembly modes with synchronized 2D/3D guidance and unit-correct input.
           </p>
         </div>
       </header>
 
       <main className="workspace">
         <section className="workspace-main">
-          <div className="workspace-intro">
-            <article className="hero-card">
-              <h2>Rectangular Box Vertical Slice</h2>
-              <p>
-                The wizard now feeds a shared geometry pipeline for <code>Open Tray</code>,{' '}
-                <code>Glue Tab Carton</code>, and <code>Tuck Carton</code>. The same canonical
-                model drives the SVG preview plus PDF and SVG export paths.
-              </p>
-              <div className="hero-stats">
-                <div className="summary-item">
-                  <span className="meta-label">Current draft</span>
-                  <strong>{draft.name}</strong>
-                  <p>{getStyleLabel(String(preview.template.metadata.style))}</p>
-                </div>
-                <div className="summary-item">
-                  <span className="meta-label">Material guidance</span>
-                  <strong>{draftMaterial.label}</strong>
-                  <p>{draftMaterial.assemblyNote}</p>
-                </div>
-                <div className="summary-item">
-                  <span className="meta-label">Paper target</span>
-                  <strong>{preview.paper.label}</strong>
-                  <p>
-                    {preview.layout.hasLegalPlacement
-                      ? `Fits current printable area with ${getOrientationStrategyLabel(draft.orientation, preview.layout)}.`
-                      : 'Does not fit current printable area.'}
-                  </p>
-                </div>
-              </div>
-            </article>
-
+          <div className="workspace-info-bar">
+            <span className="info-chip">
+              <span className="chip-label">Draft</span>
+              <span className="chip-value">{draft.name}</span>
+            </span>
+            <span className="info-chip">
+              <span className="chip-label">Shape</span>
+              <span className="chip-value">{draft.shapeType === 'cylinder' ? 'Straight Cylinder' : getStyleLabel(String(preview.template.metadata.style))}</span>
+            </span>
+            <span className="info-chip">
+              <span className="chip-label">Material</span>
+              <span className="chip-value">{draftMaterial.label}</span>
+            </span>
+            <span className="info-chip">
+              <span className="chip-label">Paper</span>
+              <span className="chip-value">{preview.paper.label} · {getOrientationStrategyLabel(draft.orientation, preview.layout)}</span>
+            </span>
+            <span className="info-chip">
+              <span className="chip-label">Printable</span>
+              <span className="chip-value">{formatLength(preview.layout.printableArea.width, unitSystem)} × {formatLength(preview.layout.printableArea.height, unitSystem)}</span>
+            </span>
+            <span className="info-chip">
+              <span className="chip-label">Limits</span>
+              <span className="chip-value">{formatLength(DEFAULT_MIN_DIMENSION_MM, unitSystem)}–{formatLength(DEFAULT_MAX_DIMENSION_MM, unitSystem)}</span>
+            </span>
+            <span className={`info-chip status-chip${preview.layout.hasLegalPlacement ? ' status-ok' : ' status-warn'}`}>
+              <span className="chip-label">Status</span>
+              <span className="chip-value">{preview.layout.hasLegalPlacement ? 'Fits' : 'Overflow'}</span>
+            </span>
           </div>
 
           <article className="canvas-placeholder">
@@ -390,10 +489,7 @@ export function WorkspacePage() {
               <div className="preview-stage">
                 <div>
                   <h3>Live Template Preview</h3>
-                  <p>
-                    Generated from canonical template data. This is the same model the layout engine
-                    plus the PDF and SVG renderers consume.
-                  </p>
+                  <p>Flat 2D net with panels, folds, and tabs.</p>
                 </div>
                 <TemplatePreview
                   faceLabelLookup={assemblyModel.targetIdToFaceLabel}
@@ -410,84 +506,49 @@ export function WorkspacePage() {
               <div className="preview-stage">
                 <div>
                   <h3>3D Assembly View</h3>
-                  <p>
-                    Isometric assembled-form preview driven by the current box dimensions and style
-                    selection. Sequence steps now drive fold guidance while face hover still spotlights
-                    matching template regions and printable page mappings.
-                  </p>
+                  <p>Finished, exploded, and step-by-step assembly guidance.</p>
                 </div>
-                <BoxAssemblyView
-                  activeFaceId={effectiveAssemblyFaceId}
-                  activeStepId={activeAssemblyStep?.id ?? null}
-                  name={draft.name}
-                  boxInput={draft.boxInput}
-                  mode={assemblyMode}
-                  model={assemblyModel}
-                  onFaceHoverChange={setHoveredAssemblyFaceId}
-                  onFaceSelect={setSelectedAssemblyFaceId}
-                  onModeChange={setAssemblyMode}
-                  onStepChange={setActiveAssemblyStepId}
-                  partMappings={assemblyPartMappings}
-                  selectedFaceId={selectedAssemblyFaceId}
-                  unitSystem={unitSystem}
-                />
-              </div>
+                {preview.template.shapeType === 'cylinder' ? (
+                  <CylinderAssemblyView
+                    activeFaceId={effectiveAssemblyFaceId}
+                    activeStepId={activeAssemblyStep?.id ?? null}
+                    name={preview.template.name}
+                    cylinderInput={{
+                      diameterMm: Number(preview.template.dimensionsMm.diameter ?? 0),
+                      heightMm: Number(preview.template.dimensionsMm.height ?? 0),
+                    }}
+                    mode={assemblyMode}
+                    model={assemblyModel}
+                    onFaceHoverChange={setHoveredAssemblyFaceId}
+                    onFaceSelect={setSelectedAssemblyFaceId}
+                    onModeChange={setAssemblyMode}
+                    onStepChange={setActiveAssemblyStepId}
+                    partMappings={assemblyPartMappings}
+                    selectedFaceId={selectedAssemblyFaceId}
+                    unitSystem={unitSystem}
+                  />
+                ) : (
+                  <BoxAssemblyView
+                    activeFaceId={effectiveAssemblyFaceId}
+                    activeStepId={activeAssemblyStep?.id ?? null}
+                    name={draft.name}
+                    boxInput={draft.boxInput}
+                    mode={assemblyMode}
+                    model={assemblyModel}
+                    onFaceHoverChange={setHoveredAssemblyFaceId}
+                    onFaceSelect={setSelectedAssemblyFaceId}
+                    onModeChange={setAssemblyMode}
+                    onStepChange={setActiveAssemblyStepId}
+                    partMappings={assemblyPartMappings}
+                    selectedFaceId={selectedAssemblyFaceId}
+                    unitSystem={unitSystem}
+                  />
+                )}
+                </div>
             </div>
           </article>
 
-          <article className="panel-card">
-            <h3>Printable Area Snapshot</h3>
-            <div className="detail-grid">
-              <div>
-                <span className="meta-label">Sheet</span>
-                <strong>{preview.paper.label}</strong>
-                <p>
-                  {preview.paper.family === 'us'
-                    ? 'US standard'
-                    : 'International standard'}
-                </p>
-              </div>
-              <div>
-                <span className="meta-label">Usable width</span>
-                <strong>{formatLength(preview.layout.printableArea.width, unitSystem)}</strong>
-                <p>
-                  {primaryPart.bounds.width <= preview.layout.printableArea.width
-                    ? 'Current draft fits width.'
-                    : 'Current draft exceeds width.'}
-                </p>
-              </div>
-              <div>
-                <span className="meta-label">Usable height</span>
-                <strong>{formatLength(preview.layout.printableArea.height, unitSystem)}</strong>
-                <p>
-                  {primaryPart.bounds.height <= preview.layout.printableArea.height
-                    ? 'Current draft fits height.'
-                    : 'Current draft exceeds height.'}
-                </p>
-              </div>
-            </div>
-          </article>
 
-          <article className="panel-card support-card">
-            <h3>Guardrails</h3>
-            <div className="detail-grid">
-              <div>
-                <span className="meta-label">Minimum supported dimension</span>
-                <strong>{formatLength(DEFAULT_MIN_DIMENSION_MM, unitSystem)}</strong>
-              </div>
-              <div>
-                <span className="meta-label">Maximum supported dimension</span>
-                <strong>{formatLength(DEFAULT_MAX_DIMENSION_MM, unitSystem)}</strong>
-              </div>
-              <div>
-                <span className="meta-label">Current part envelope</span>
-                <strong>
-                  {formatLength(primaryPart.bounds.width, unitSystem)} ×{' '}
-                  {formatLength(primaryPart.bounds.height, unitSystem)}
-                </strong>
-              </div>
-            </div>
-          </article>
         </section>
 
         <aside className="workspace-sidebar">
@@ -504,7 +565,7 @@ export function WorkspacePage() {
             <div className="wizard-header">
               <div>
                 <h3>Project Queue</h3>
-                <p>Committed parametric items ready for editing, duplication, and grouped project exports.</p>
+                <p>Parametric items for editing, duplication, and batch export.</p>
               </div>
               <div className="toolbar-group">
                 <span className="tag">
@@ -538,7 +599,7 @@ export function WorkspacePage() {
               <div className="queue-empty">
                 <strong>No queued templates yet</strong>
                 <p>
-                  Finish the wizard and add a box to the queue to start building a printable
+                  Finish the wizard and add an item to the queue to start building a printable
                   project.
                 </p>
               </div>
@@ -558,12 +619,21 @@ export function WorkspacePage() {
                           <h4>{item.name}</h4>
                           <p>{itemMaterial.label}</p>
                         </div>
-                        <span className="tag">{getStyleLabel(item.boxInput.style)}</span>
+                        <span className="tag">{item.shapeType === 'cylinder' ? 'Straight Cylinder' : getStyleLabel(item.boxInput.style)}</span>
                       </div>
                       <div className="queue-meta">
-                        <span>{formatLength(item.boxInput.externalLengthMm, unitSystem)} L</span>
-                        <span>{formatLength(item.boxInput.externalWidthMm, unitSystem)} W</span>
-                        <span>{formatLength(item.boxInput.externalHeightMm, unitSystem)} H</span>
+                        {item.shapeType === 'cylinder' ? (
+                          <>
+                            <span>{formatLength(item.cylinderInput.diameterMm, unitSystem)} dia</span>
+                            <span>{formatLength(item.cylinderInput.heightMm, unitSystem)} H</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>{formatLength(item.boxInput.externalLengthMm, unitSystem)} L</span>
+                            <span>{formatLength(item.boxInput.externalWidthMm, unitSystem)} W</span>
+                            <span>{formatLength(item.boxInput.externalHeightMm, unitSystem)} H</span>
+                          </>
+                        )}
                         <span>{itemResult.paper.label}</span>
                         <span>{getOrientationStrategyLabel(item.orientation, itemResult.layout)}</span>
                         <span>{formatLength(itemPart.bounds.width, unitSystem)} part width</span>

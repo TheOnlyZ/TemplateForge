@@ -8,9 +8,12 @@ import {
 } from '../domain/paper/index.ts'
 import type { MaterialId } from '../domain/materials/index.ts'
 import type { BoxInput, BoxStyle } from '../domain/shapes/box/index.ts'
+import type { CylinderInput } from '../domain/shapes/cylinder/index.ts'
+import type { ShapeType } from '../domain/shapes/shared/index.ts'
 import type { UnitSystem } from '../domain/units/index.ts'
 
 export type BoxWizardStepId =
+  | 'shape'
   | 'dimensions'
   | 'style'
   | 'material'
@@ -20,7 +23,9 @@ export type BoxWizardStepId =
 
 export interface BoxDraft {
   name: string
+  shapeType: ShapeType
   boxInput: BoxInput
+  cylinderInput: CylinderInput
   materialId: MaterialId
   paperSizeId: PaperSizeId
   orientation: OrientationPreference
@@ -41,6 +46,7 @@ export interface ProjectStateSnapshot {
 }
 
 const wizardSteps: BoxWizardStepId[] = [
+  'shape',
   'dimensions',
   'style',
   'material',
@@ -52,12 +58,17 @@ const wizardSteps: BoxWizardStepId[] = [
 function createDefaultDraft(index: number): BoxDraft {
   return {
     name: `Rectangular Box ${index}`,
+    shapeType: 'box',
     boxInput: {
       externalLengthMm: 120,
       externalWidthMm: 80,
       externalHeightMm: 24,
       glueTabWidthMm: 12,
       style: 'open-tray',
+    },
+    cylinderInput: {
+      diameterMm: 60,
+      heightMm: 100,
     },
     materialId: 'cardstock',
     paperSizeId: 'letter',
@@ -71,6 +82,7 @@ function cloneDraft(draft: BoxDraft): BoxDraft {
     ...draft,
     margins: { ...draft.margins },
     boxInput: { ...draft.boxInput },
+    cylinderInput: { ...draft.cylinderInput },
   }
 }
 
@@ -85,7 +97,7 @@ export function createDefaultProjectState(): ProjectStateSnapshot {
   return {
     unitSystem: 'metric',
     draft: createDefaultDraft(1),
-    draftStep: 'dimensions',
+    draftStep: 'shape',
     queueItems: [],
     nextQueueIndex: 1,
     editingQueueItemId: null,
@@ -101,12 +113,14 @@ interface AppState {
   editingQueueItemId: string | null
   setUnitSystem: (unitSystem: UnitSystem) => void
   setDraftName: (name: string) => void
+  setDraftShapeType: (shapeType: ShapeType) => void
   setDraftStyle: (style: BoxStyle) => void
   setDraftMaterialId: (materialId: MaterialId) => void
   setDraftPaperSizeId: (paperSizeId: PaperSizeId) => void
   setDraftOrientation: (orientation: OrientationPreference) => void
   setDraftMargin: (side: keyof MarginConfig, value: number) => void
   setDraftDimension: (dimension: keyof Omit<BoxInput, 'style'>, value: number) => void
+  setDraftCylinderDimension: (dimension: keyof CylinderInput, value: number) => void
   setDraftStep: (step: BoxWizardStepId) => void
   nextDraftStep: () => void
   previousDraftStep: () => void
@@ -126,6 +140,13 @@ export const useAppStore = create<AppState>((set) => ({
       draft: {
         ...state.draft,
         name,
+      },
+    })),
+  setDraftShapeType: (shapeType) =>
+    set((state) => ({
+      draft: {
+        ...state.draft,
+        shapeType,
       },
     })),
   setDraftStyle: (style) =>
@@ -179,6 +200,16 @@ export const useAppStore = create<AppState>((set) => ({
         },
       },
     })),
+  setDraftCylinderDimension: (dimension, value) =>
+    set((state) => ({
+      draft: {
+        ...state.draft,
+        cylinderInput: {
+          ...state.draft.cylinderInput,
+          [dimension]: value,
+        },
+      },
+    })),
   setDraftStep: (step) => set({ draftStep: step }),
   nextDraftStep: () =>
     set((state) => {
@@ -223,6 +254,7 @@ export const useAppStore = create<AppState>((set) => ({
             ...state.draft,
             margins: { ...state.draft.margins },
             boxInput: { ...state.draft.boxInput },
+            cylinderInput: { ...state.draft.cylinderInput },
           },
           ...state.queueItems,
         ],

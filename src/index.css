@@ -13,6 +13,21 @@
   --shadow: rgba(4, 10, 22, 0.38) 0 18px 36px -24px;
   --sans: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --mono: 'SFMono-Regular', ui-monospace, monospace;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-full: 999px;
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 0.75rem;
+  --space-lg: 1rem;
+  --space-xl: 1.25rem;
   font: 16px/1.5 var(--sans);
   color: var(--text);
   background: var(--bg);
@@ -65,6 +80,6 @@ code {
   font-family: var(--mono);
   font-size: 0.875em;
   padding: 0.1rem 0.35rem;
-  border-radius: 0.35rem;
+  border-radius: var(--radius-sm);
   background: rgba(153, 167, 187, 0.12);
 }

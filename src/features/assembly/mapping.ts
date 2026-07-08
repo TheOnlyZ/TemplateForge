@@ -10,11 +10,7 @@ export interface AssemblyPartMapping {
 }
 
 function buildPageLabel(page: LayoutResult['pages'][number]) {
-  if (page.tileRows === 1 && page.tileColumns === 1) {
-    return `Page ${page.pageNumber}`
-  }
-
-  return `Page ${page.pageNumber} • Tile ${page.tileRow},${page.tileColumn}`
+  return `Page ${page.pageNumber}`
 }
 
 export function buildAssemblyPartMappings(

@@ -14,7 +14,7 @@ describe('BoxWizard', () => {
   })
 
   it('interprets entered dimension values in imperial mode as inches', () => {
-    useAppStore.setState({ unitSystem: 'imperial' })
+    useAppStore.setState({ unitSystem: 'imperial', draftStep: 'dimensions' })
     const { template } = generateBoxTemplate(
       {
         externalLengthMm: 120,

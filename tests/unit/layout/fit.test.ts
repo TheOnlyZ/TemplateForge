@@ -68,35 +68,15 @@ describe('layoutTemplate', () => {
     expect(result.pages[0]?.partPlacements).toHaveLength(1)
   })
 
-  it('tiles oversized layouts across multiple pages instead of failing placement', () => {
+  it('returns overflow result when layout does not fit the printable area', () => {
     const template = createMultiPartTemplate([createTemplatePart('oversized-part', 320, 430)])
 
     const result = layoutTemplate(template, getPaperDefinition('a4'), 'portrait', getDefaultMarginConfig())
 
-    expect(result.hasLegalPlacement).toBe(true)
-    expect(result.printableAreaOverflow).toBe(false)
-    expect(result.pageCount).toBe(4)
-    expect(result.pages).toHaveLength(4)
-    expect(result.pages.every((page) => page.partPlacements.length === 1)).toBe(true)
-    expect(result.pages.every((page) => page.registrationMarks.length === 4)).toBe(true)
-    expect(result.pages.every((page) => page.alignmentGuides.length === 4)).toBe(true)
-    expect(result.pages.every((page) => page.assemblyLabels.length === 2)).toBe(true)
-    expect(result.pages.every((page) => page.joinIndicators.length === 2)).toBe(true)
-    expect(result.pages.every((page) => page.overlapRegions.length === 2)).toBe(true)
-    expect(result.pages[0]?.tileRows).toBe(2)
-    expect(result.pages[0]?.tileColumns).toBe(2)
-    expect(result.pages[0]?.assemblyLabels.map((label) => label.text).sort()).toEqual([
-      'Join Page 2',
-      'Join Page 3',
-    ])
-    expect(result.pages[0]?.joinIndicators.map((indicator) => indicator.text).sort()).toEqual([
-      'J1-2',
-      'J1-3',
-    ])
-    expect(result.pages[0]?.overlapRegions.map((region) => region.edge).sort()).toEqual([
-      'bottom',
-      'right',
-    ])
+    expect(result.hasLegalPlacement).toBe(false)
+    expect(result.printableAreaOverflow).toBe(true)
+    expect(result.pageCount).toBe(0)
+    expect(result.pages).toHaveLength(0)
   })
 
   it('automatically selects landscape when portrait would overflow', () => {
@@ -155,7 +135,7 @@ describe('layoutTemplate', () => {
     expect(Math.max(...rowOccupancy)).toBeGreaterThan(1)
   })
 
-  it('fits taller layouts on a single Legal page while Letter falls back to tiling', () => {
+  it('fits taller layouts on a single Legal page when Letter overflows', () => {
     const template = createMultiPartTemplate([createTemplatePart('tall-part', 190, 320)])
 
     const letterLayout = layoutTemplate(
@@ -171,8 +151,8 @@ describe('layoutTemplate', () => {
       getDefaultMarginConfig(),
     )
 
-    expect(letterLayout.hasLegalPlacement).toBe(true)
-    expect(letterLayout.pageCount).toBe(2)
+    expect(letterLayout.printableAreaOverflow).toBe(true)
+    expect(letterLayout.pageCount).toBe(0)
     expect(legalLayout.hasLegalPlacement).toBe(true)
     expect(legalLayout.pageCount).toBe(1)
     expect(legalLayout.pages[0]?.paperSizeId).toBe('legal')

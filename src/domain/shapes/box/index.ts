@@ -27,13 +27,13 @@ export interface BoxInput {
   style: BoxStyle
 }
 
-interface EdgeTabSpec {
+export interface EdgeTabSpec {
   id: string
   label: string
   outline: Point[]
 }
 
-function createVerticalGlueTab(
+export function createVerticalGlueTab(
   x: number,
   yTop: number,
   yBottom: number,
@@ -52,7 +52,7 @@ function createVerticalGlueTab(
   ]
 }
 
-function createHorizontalFlap(
+export function createHorizontalFlap(
   xStart: number,
   xEnd: number,
   yAttach: number,
@@ -71,7 +71,7 @@ function createHorizontalFlap(
   ]
 }
 
-function createTuckFlap(
+export function createTuckFlap(
   xStart: number,
   xEnd: number,
   yAttach: number,
@@ -92,7 +92,7 @@ function createTuckFlap(
   ]
 }
 
-function createPanelAnnotation(
+export function createPanelAnnotation(
   context: ShapeGenerationContext,
   panel: Panel,
   text: string,
@@ -106,7 +106,7 @@ function createPanelAnnotation(
   }
 }
 
-function createTab(
+export function createTab(
   context: ShapeGenerationContext,
   partId: string,
   id: string,
@@ -126,7 +126,7 @@ function createTab(
   }
 }
 
-function buildTemplateItem(
+export function buildTemplateItem(
   input: BoxInput,
   context: ShapeGenerationContext,
   panels: Panel[],
@@ -620,3 +620,6 @@ export function generateBoxTemplate(
 
   return buildCartonTemplate(input, context)
 }
+
+export { getBoxNetGenerator } from './nets.ts'
+export type { BoxNetType } from './nets.ts'

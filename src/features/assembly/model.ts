@@ -2,7 +2,15 @@ import type { BoxStyle } from '../../domain/shapes/box/index.ts'
 import type { TemplateItem } from '../../domain/templates/index.ts'
 
 export type AssemblyMode = 'finished' | 'exploded' | 'sequence'
-export type AssemblyFaceId = 'base' | 'front' | 'back' | 'left' | 'right' | 'top'
+export type AssemblyFaceId =
+  | 'base'
+  | 'front'
+  | 'back'
+  | 'left'
+  | 'right'
+  | 'top'
+  | 'body'
+  | 'bottom'
 export type AssemblyCueKind = 'fold-up' | 'fold-in' | 'fold-over' | 'glue-here' | 'press-secure'
 
 export type AssemblySequenceStepId =
@@ -18,14 +26,20 @@ export type AssemblySequenceStepId =
   | 'glue-side-seam'
   | 'fold-top-closure'
   | 'fold-base-closure'
+  | 'curve-body-wrap'
+  | 'glue-cylinder-seam'
+  | 'fold-top-alignment'
+  | 'seat-top-cap'
+  | 'fold-bottom-alignment'
+  | 'seat-bottom-cap'
 
-export interface BoxAssemblyFace {
+export interface AssemblyFace {
   id: AssemblyFaceId
   label: string
   targetIds: string[]
 }
 
-export interface BoxAssemblyStep {
+export interface AssemblyStep {
   id: AssemblySequenceStepId
   title: string
   instruction: string
@@ -37,10 +51,10 @@ export interface BoxAssemblyStep {
   glueTabIds: string[]
 }
 
-export interface BoxAssemblyModel {
+export interface AssemblyModel {
   modeOptions: AssemblyMode[]
-  faces: BoxAssemblyFace[]
-  steps: BoxAssemblyStep[]
+  faces: AssemblyFace[]
+  steps: AssemblyStep[]
   targetIdToFaceId: Record<string, AssemblyFaceId>
   targetIdToFaceLabel: Record<string, string>
   interactiveTargetIds: Set<string>
@@ -48,7 +62,11 @@ export interface BoxAssemblyModel {
   defaultMode: AssemblyMode
 }
 
-function buildTargetLookup(faces: BoxAssemblyFace[]) {
+export type BoxAssemblyFace = AssemblyFace
+export type BoxAssemblyStep = AssemblyStep
+export type BoxAssemblyModel = AssemblyModel
+
+function buildTargetLookup(faces: AssemblyFace[]) {
   const targetIdToFaceId: Record<string, AssemblyFaceId> = {}
   const targetIdToFaceLabel: Record<string, string> = {}
 
@@ -81,16 +99,16 @@ function getTargetFoldIds(template: TemplateItem, fragments: string[]) {
     .map((line) => line.id)
 }
 
-function buildOpenTrayModel(template: TemplateItem): BoxAssemblyModel {
+function buildOpenTrayModel(template: TemplateItem): AssemblyModel {
   const glueTabIds = template.tabs.map((tab) => tab.id)
-  const faces: BoxAssemblyFace[] = [
+  const faces: AssemblyFace[] = [
     { id: 'front', label: 'Front', targetIds: getTargetPanelIds(template, ['Front Wall']) },
     { id: 'back', label: 'Back', targetIds: getTargetPanelIds(template, ['Back Wall']) },
     { id: 'left', label: 'Left', targetIds: getTargetPanelIds(template, ['Left Wall']) },
     { id: 'right', label: 'Right', targetIds: getTargetPanelIds(template, ['Right Wall']) },
     { id: 'base', label: 'Base', targetIds: getTargetPanelIds(template, ['Base']) },
   ]
-  const steps: BoxAssemblyStep[] = [
+  const steps: AssemblyStep[] = [
     {
       id: 'fold-front-wall',
       title: 'Step 1',
@@ -175,11 +193,11 @@ function buildOpenTrayModel(template: TemplateItem): BoxAssemblyModel {
   }
 }
 
-function buildCartonModel(template: TemplateItem): BoxAssemblyModel {
+function buildCartonModel(template: TemplateItem): AssemblyModel {
   const topTabIds = getTargetTabIds(template, ['Top '])
   const baseTabIds = getTargetTabIds(template, ['Bottom '])
   const glueTabIds = template.tabs.filter((tab) => tab.label === 'Glue Seam').map((tab) => tab.id)
-  const faces: BoxAssemblyFace[] = [
+  const faces: AssemblyFace[] = [
     { id: 'front', label: 'Front', targetIds: getTargetPanelIds(template, ['Front Panel']) },
     { id: 'back', label: 'Back', targetIds: getTargetPanelIds(template, ['Back Panel']) },
     { id: 'left', label: 'Left', targetIds: getTargetPanelIds(template, ['Left Panel']) },
@@ -187,7 +205,7 @@ function buildCartonModel(template: TemplateItem): BoxAssemblyModel {
     { id: 'base', label: 'Base', targetIds: baseTabIds },
     { id: 'top', label: 'Top', targetIds: topTabIds },
   ]
-  const steps: BoxAssemblyStep[] = [
+  const steps: AssemblyStep[] = [
     {
       id: 'fold-right-panel',
       title: 'Step 1',
@@ -279,4 +297,97 @@ export function buildBoxAssemblyModel(template: TemplateItem, style: BoxStyle): 
   }
 
   return buildCartonModel(template)
+}
+
+export function buildCylinderAssemblyModel(template: TemplateItem): AssemblyModel {
+  const glueTabIds = template.tabs.filter((tab) => tab.label === 'Glue Seam').map((tab) => tab.id)
+  const topAlignmentTabIds = getTargetTabIds(template, ['Top Alignment Tab'])
+  const bottomAlignmentTabIds = getTargetTabIds(template, ['Bottom Alignment Tab'])
+  const topCapIds = getTargetPanelIds(template, ['Top Cap'])
+  const bottomCapIds = getTargetPanelIds(template, ['Bottom Cap'])
+  const faces: AssemblyFace[] = [
+    { id: 'body', label: 'Body', targetIds: getTargetPanelIds(template, ['Body Wrap']) },
+    { id: 'top', label: 'Top', targetIds: [...topCapIds, ...topAlignmentTabIds] },
+    { id: 'bottom', label: 'Bottom', targetIds: [...bottomCapIds, ...bottomAlignmentTabIds] },
+  ]
+  const steps: AssemblyStep[] = [
+    {
+      id: 'curve-body-wrap',
+      title: 'Step 1',
+      instruction: 'Pre-curve the body wrap into a cylinder',
+      focusFaceId: 'body',
+      cueKind: 'fold-over',
+      cueLabel: 'Fold Over',
+      targetIds: getTargetPanelIds(template, ['Body Wrap']),
+      foldIds: [],
+      glueTabIds: [],
+    },
+    {
+      id: 'glue-cylinder-seam',
+      title: 'Step 2',
+      instruction: 'Apply adhesive to the glue seam and close the shell',
+      focusFaceId: 'body',
+      cueKind: 'glue-here',
+      cueLabel: 'Glue Here',
+      targetIds: glueTabIds,
+      foldIds: getTargetFoldIds(template, ['glue-seam']),
+      glueTabIds,
+    },
+    {
+      id: 'fold-top-alignment',
+      title: 'Step 3',
+      instruction: 'Fold the top alignment tabs inward',
+      focusFaceId: 'top',
+      cueKind: 'fold-in',
+      cueLabel: 'Fold In',
+      targetIds: topAlignmentTabIds,
+      foldIds: getTargetFoldIds(template, ['top-alignment-']),
+      glueTabIds: [],
+    },
+    {
+      id: 'seat-top-cap',
+      title: 'Step 4',
+      instruction: 'Seat the top cap onto the folded tabs',
+      focusFaceId: 'top',
+      cueKind: 'press-secure',
+      cueLabel: 'Press Secure',
+      targetIds: [...topCapIds, ...topAlignmentTabIds],
+      foldIds: [],
+      glueTabIds: [],
+    },
+    {
+      id: 'fold-bottom-alignment',
+      title: 'Step 5',
+      instruction: 'Fold the bottom alignment tabs inward',
+      focusFaceId: 'bottom',
+      cueKind: 'fold-in',
+      cueLabel: 'Fold In',
+      targetIds: bottomAlignmentTabIds,
+      foldIds: getTargetFoldIds(template, ['bottom-alignment-']),
+      glueTabIds: [],
+    },
+    {
+      id: 'seat-bottom-cap',
+      title: 'Step 6',
+      instruction: 'Seat the bottom cap and press the shell secure',
+      focusFaceId: 'bottom',
+      cueKind: 'press-secure',
+      cueLabel: 'Press Secure',
+      targetIds: [...bottomCapIds, ...bottomAlignmentTabIds],
+      foldIds: [],
+      glueTabIds: [],
+    },
+  ]
+  const { targetIdToFaceId, targetIdToFaceLabel } = buildTargetLookup(faces)
+
+  return {
+    modeOptions: ['finished', 'exploded', 'sequence'],
+    faces,
+    steps,
+    targetIdToFaceId,
+    targetIdToFaceLabel,
+    interactiveTargetIds: new Set(Object.keys(targetIdToFaceId)),
+    glueTabIds: new Set(glueTabIds),
+    defaultMode: 'finished',
+  }
 }

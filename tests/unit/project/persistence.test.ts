@@ -7,7 +7,7 @@ import {
 } from '../../../src/features/project/persistence.ts'
 
 describe('project persistence', () => {
-  it('round-trips the current project state through the saved project file format', () => {
+  it('round-trips a box project state through the saved project file format', () => {
     const snapshot = createDefaultProjectState()
     snapshot.unitSystem = 'imperial'
     snapshot.draft.name = 'Saved Draft'
@@ -16,6 +16,7 @@ describe('project persistence', () => {
       {
         id: 'queue-item-3',
         name: 'Queued Box',
+        shapeType: 'box',
         materialId: 'cardstock',
         paperSizeId: 'letter',
         orientation: 'landscape',
@@ -27,12 +28,45 @@ describe('project persistence', () => {
           glueTabWidthMm: 14,
           style: 'glue-tab-carton',
         },
+        cylinderInput: { diameterMm: 60, heightMm: 100 },
       },
     ]
     snapshot.nextQueueIndex = 4
     snapshot.editingQueueItemId = 'queue-item-3'
 
     const contents = createProjectFileContents(snapshot, 'Queued Box Project')
+    const restored = parseProjectFileContents(contents)
+
+    expect(restored).toEqual(snapshot)
+  })
+
+  it('round-trips a cylinder project state through the saved project file format', () => {
+    const snapshot = createDefaultProjectState()
+    snapshot.draft.shapeType = 'cylinder'
+    snapshot.draft.name = 'Cylinder Draft'
+    snapshot.draft.cylinderInput = { diameterMm: 80, heightMm: 120 }
+    snapshot.nextQueueIndex = 2
+    snapshot.queueItems = [
+      {
+        id: 'queue-item-1',
+        name: 'Queued Cylinder',
+        shapeType: 'cylinder',
+        materialId: 'cardstock',
+        paperSizeId: 'letter',
+        orientation: 'auto',
+        margins: { top: 6.35, right: 6.35, bottom: 6.35, left: 6.35 },
+        boxInput: {
+          externalLengthMm: 120,
+          externalWidthMm: 80,
+          externalHeightMm: 24,
+          glueTabWidthMm: 12,
+          style: 'open-tray',
+        },
+        cylinderInput: { diameterMm: 80, heightMm: 120 },
+      },
+    ]
+
+    const contents = createProjectFileContents(snapshot, 'Cylinder Project')
     const restored = parseProjectFileContents(contents)
 
     expect(restored).toEqual(snapshot)
@@ -47,6 +81,7 @@ describe('project persistence', () => {
       {
         id: 'queue-item-1',
         name: 'Queued Project Name',
+        shapeType: 'box',
         materialId: 'cardstock',
         paperSizeId: 'a4',
         orientation: 'auto',
@@ -58,6 +93,7 @@ describe('project persistence', () => {
           glueTabWidthMm: 12,
           style: 'open-tray',
         },
+        cylinderInput: { diameterMm: 60, heightMm: 100 },
       },
     ]
 
@@ -76,6 +112,7 @@ describe('project persistence', () => {
       {
         id: 'queue-item-1',
         name: 'Queued Project Name',
+        shapeType: 'box',
         materialId: 'cardstock',
         paperSizeId: 'a4',
         orientation: 'auto',
@@ -87,6 +124,7 @@ describe('project persistence', () => {
           glueTabWidthMm: 12,
           style: 'open-tray',
         },
+        cylinderInput: { diameterMm: 60, heightMm: 100 },
       },
     ]
     snapshot.editingQueueItemId = 'missing-item'

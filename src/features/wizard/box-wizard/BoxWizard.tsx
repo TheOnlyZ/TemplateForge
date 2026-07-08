@@ -9,15 +9,30 @@ import {
   type UnitSystem,
 } from '../../../domain/units/index.ts'
 import type { BoxStyle } from '../../../domain/shapes/box/index.ts'
+import type { ShapeType } from '../../../domain/shapes/shared/index.ts'
 import { useAppStore, type BoxWizardStepId } from '../../../store/app-store.ts'
 
 const steps: { id: BoxWizardStepId; label: string }[] = [
+  { id: 'shape', label: 'Shape' },
   { id: 'dimensions', label: 'Dimensions' },
   { id: 'style', label: 'Style' },
   { id: 'material', label: 'Material' },
   { id: 'paper', label: 'Paper' },
   { id: 'preview', label: 'Preview' },
   { id: 'queue', label: 'Add to Queue' },
+]
+
+const shapeOptions: { id: ShapeType; title: string; description: string }[] = [
+  {
+    id: 'box',
+    title: 'Rectangular Box',
+    description: 'Standard rectangular box with four walls, base, and your choice of closure style.',
+  },
+  {
+    id: 'cylinder',
+    title: 'Straight Cylinder',
+    description: 'Round tube with a cylindrical body wrap and fitted top and bottom caps.',
+  },
 ]
 
 const styleOptions: { id: BoxStyle; title: string; description: string }[] = [
@@ -63,12 +78,14 @@ export function BoxWizard({
     editingQueueItemId,
     nextDraftStep,
     previousDraftStep,
+    setDraftCylinderDimension,
     setDraftDimension,
     setDraftMargin,
     setDraftMaterialId,
     setDraftName,
     setDraftOrientation,
     setDraftPaperSizeId,
+    setDraftShapeType,
     setDraftStep,
     setDraftStyle,
   } = useAppStore()
@@ -95,7 +112,7 @@ export function BoxWizard({
       <div className="wizard-header">
         <div>
           <h3>Shape Wizard</h3>
-          <p>Rectangular box workflow with a shared geometry and export pipeline.</p>
+          <p>Multi-shape workflow with a shared geometry and export pipeline.</p>
         </div>
         <span className="tag">
           Step {stepIndex + 1} of {steps.length}
@@ -118,6 +135,22 @@ export function BoxWizard({
         ))}
       </ol>
 
+      {draftStep === 'shape' && (
+        <div className="wizard-section style-grid">
+          {shapeOptions.map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              className={`style-card${draft.shapeType === option.id ? ' active' : ''}`}
+              onClick={() => setDraftShapeType(option.id)}
+            >
+              <strong>{option.title}</strong>
+              <span>{option.description}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
       {draftStep === 'dimensions' && (
         <div className="wizard-section">
           <label className="panel-field">
@@ -130,89 +163,131 @@ export function BoxWizard({
             />
           </label>
 
-          <div className="panel-grid">
-            <label className="panel-field">
-              <span>External length ({getUnitSuffix(unitSystem)})</span>
-              <input
-                className="panel-input"
-                type="number"
-                min={formatInputValue(12.7)}
-                max={formatInputValue(914.4)}
-                step={unitSystem === 'imperial' ? 0.01 : 1}
-                value={formatInputValue(draft.boxInput.externalLengthMm)}
-                onChange={(event) =>
-                  setDraftDimension('externalLengthMm', parseInputValue(event.target.value))
-                }
-              />
-              <small>{formatAlternateLength(draft.boxInput.externalLengthMm)}</small>
-            </label>
+          {draft.shapeType === 'cylinder' ? (
+            <div className="panel-grid">
+              <label className="panel-field">
+                <span>Diameter ({getUnitSuffix(unitSystem)})</span>
+                <input
+                  className="panel-input"
+                  type="number"
+                  min={formatInputValue(12.7)}
+                  max={formatInputValue(914.4)}
+                  step={unitSystem === 'imperial' ? 0.01 : 1}
+                  value={formatInputValue(draft.cylinderInput.diameterMm)}
+                  onChange={(event) =>
+                    setDraftCylinderDimension('diameterMm', parseInputValue(event.target.value))
+                  }
+                />
+                <small>{formatAlternateLength(draft.cylinderInput.diameterMm)}</small>
+              </label>
 
-            <label className="panel-field">
-              <span>External width ({getUnitSuffix(unitSystem)})</span>
-              <input
-                className="panel-input"
-                type="number"
-                min={formatInputValue(12.7)}
-                max={formatInputValue(914.4)}
-                step={unitSystem === 'imperial' ? 0.01 : 1}
-                value={formatInputValue(draft.boxInput.externalWidthMm)}
-                onChange={(event) =>
-                  setDraftDimension('externalWidthMm', parseInputValue(event.target.value))
-                }
-              />
-              <small>{formatAlternateLength(draft.boxInput.externalWidthMm)}</small>
-            </label>
+              <label className="panel-field">
+                <span>Height ({getUnitSuffix(unitSystem)})</span>
+                <input
+                  className="panel-input"
+                  type="number"
+                  min={formatInputValue(12.7)}
+                  max={formatInputValue(914.4)}
+                  step={unitSystem === 'imperial' ? 0.01 : 1}
+                  value={formatInputValue(draft.cylinderInput.heightMm)}
+                  onChange={(event) =>
+                    setDraftCylinderDimension('heightMm', parseInputValue(event.target.value))
+                  }
+                />
+                <small>{formatAlternateLength(draft.cylinderInput.heightMm)}</small>
+              </label>
+            </div>
+          ) : (
+            <div className="panel-grid">
+              <label className="panel-field">
+                <span>External length ({getUnitSuffix(unitSystem)})</span>
+                <input
+                  className="panel-input"
+                  type="number"
+                  min={formatInputValue(12.7)}
+                  max={formatInputValue(914.4)}
+                  step={unitSystem === 'imperial' ? 0.01 : 1}
+                  value={formatInputValue(draft.boxInput.externalLengthMm)}
+                  onChange={(event) =>
+                    setDraftDimension('externalLengthMm', parseInputValue(event.target.value))
+                  }
+                />
+                <small>{formatAlternateLength(draft.boxInput.externalLengthMm)}</small>
+              </label>
 
-            <label className="panel-field">
-              <span>External height ({getUnitSuffix(unitSystem)})</span>
-              <input
-                className="panel-input"
-                type="number"
-                min={formatInputValue(12.7)}
-                max={formatInputValue(914.4)}
-                step={unitSystem === 'imperial' ? 0.01 : 1}
-                value={formatInputValue(draft.boxInput.externalHeightMm)}
-                onChange={(event) =>
-                  setDraftDimension('externalHeightMm', parseInputValue(event.target.value))
-                }
-              />
-              <small>{formatAlternateLength(draft.boxInput.externalHeightMm)}</small>
-            </label>
+              <label className="panel-field">
+                <span>External width ({getUnitSuffix(unitSystem)})</span>
+                <input
+                  className="panel-input"
+                  type="number"
+                  min={formatInputValue(12.7)}
+                  max={formatInputValue(914.4)}
+                  step={unitSystem === 'imperial' ? 0.01 : 1}
+                  value={formatInputValue(draft.boxInput.externalWidthMm)}
+                  onChange={(event) =>
+                    setDraftDimension('externalWidthMm', parseInputValue(event.target.value))
+                  }
+                />
+                <small>{formatAlternateLength(draft.boxInput.externalWidthMm)}</small>
+              </label>
 
-            <label className="panel-field">
-              <span>Glue tab / seam width ({getUnitSuffix(unitSystem)})</span>
-              <input
-                className="panel-input"
-                type="number"
-                min={formatInputValue(6)}
-                max={formatInputValue(40)}
-                step={unitSystem === 'imperial' ? 0.01 : 1}
-                value={formatInputValue(draft.boxInput.glueTabWidthMm)}
-                onChange={(event) =>
-                  setDraftDimension('glueTabWidthMm', parseInputValue(event.target.value))
-                }
-              />
-              <small>
-                Recommended: {formatLength(activeMaterial.recommendedGlueTabWidthMm, unitSystem)}
-              </small>
-            </label>
-          </div>
+              <label className="panel-field">
+                <span>External height ({getUnitSuffix(unitSystem)})</span>
+                <input
+                  className="panel-input"
+                  type="number"
+                  min={formatInputValue(12.7)}
+                  max={formatInputValue(914.4)}
+                  step={unitSystem === 'imperial' ? 0.01 : 1}
+                  value={formatInputValue(draft.boxInput.externalHeightMm)}
+                  onChange={(event) =>
+                    setDraftDimension('externalHeightMm', parseInputValue(event.target.value))
+                  }
+                />
+                <small>{formatAlternateLength(draft.boxInput.externalHeightMm)}</small>
+              </label>
+
+              <label className="panel-field">
+                <span>Glue tab / seam width ({getUnitSuffix(unitSystem)})</span>
+                <input
+                  className="panel-input"
+                  type="number"
+                  min={formatInputValue(6)}
+                  max={formatInputValue(40)}
+                  step={unitSystem === 'imperial' ? 0.01 : 1}
+                  value={formatInputValue(draft.boxInput.glueTabWidthMm)}
+                  onChange={(event) =>
+                    setDraftDimension('glueTabWidthMm', parseInputValue(event.target.value))
+                  }
+                />
+                <small>
+                  Recommended: {formatLength(activeMaterial.recommendedGlueTabWidthMm, unitSystem)}
+                </small>
+              </label>
+            </div>
+          )}
         </div>
       )}
 
       {draftStep === 'style' && (
-        <div className="wizard-section style-grid">
-          {styleOptions.map((style) => (
-            <button
-              key={style.id}
-              type="button"
-              className={`style-card${draft.boxInput.style === style.id ? ' active' : ''}`}
-              onClick={() => setDraftStyle(style.id)}
-            >
-              <strong>{style.title}</strong>
-              <span>{style.description}</span>
-            </button>
-          ))}
+        <div className="wizard-section">
+          {draft.shapeType === 'cylinder' ? (
+            <p>Cylinder style is fixed — the body wrap uses a straight cylinder profile with two fitted caps.</p>
+          ) : (
+            <div className="style-grid">
+              {styleOptions.map((style) => (
+                <button
+                  key={style.id}
+                  type="button"
+                  className={`style-card${draft.boxInput.style === style.id ? ' active' : ''}`}
+                  onClick={() => setDraftStyle(style.id)}
+                >
+                  <strong>{style.title}</strong>
+                  <span>{style.description}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -303,10 +378,17 @@ export function BoxWizard({
       {draftStep === 'preview' && (
         <div className="wizard-section">
           <div className="summary-grid">
-            <div className="summary-item">
-              <span className="meta-label">Style</span>
-              <strong>{styleOptions.find((style) => style.id === draft.boxInput.style)?.title}</strong>
-            </div>
+            {draft.shapeType === 'cylinder' ? (
+              <div className="summary-item">
+                <span className="meta-label">Shape</span>
+                <strong>Cylinder</strong>
+              </div>
+            ) : (
+              <div className="summary-item">
+                <span className="meta-label">Style</span>
+                <strong>{styleOptions.find((style) => style.id === draft.boxInput.style)?.title}</strong>
+              </div>
+            )}
             <div className="summary-item">
               <span className="meta-label">Material</span>
               <strong>{activeMaterial.label}</strong>
@@ -355,8 +437,8 @@ export function BoxWizard({
         <div className="wizard-section">
           <p>
             {isEditingQueueItem
-              ? 'Update the selected queued box using the current wizard parameters, material choice, and paper settings.'
-              : 'Save the current parametric box to the project queue. The queue stores the shape parameters, material choice, and paper settings for later project exports.'}
+              ? 'Update the selected queued item using the current wizard parameters, material choice, and paper settings.'
+              : 'Save the current parametric item to the project queue. The queue stores the shape parameters, material choice, and paper settings for later project exports.'}
           </p>
           <div className="wizard-actions-inline">
             <div className="toolbar-group">

@@ -12,14 +12,7 @@ import {
 } from 'pdf-lib'
 import type { Point } from '../../domain/geometry/index.ts'
 import { layoutTemplate } from '../../domain/layout/index.ts'
-import type {
-  LayoutAssemblyLabel,
-  LayoutAlignmentGuide,
-  LayoutJoinIndicator,
-  LayoutOverlapRegion,
-  LayoutRegistrationMark,
-  LayoutResult,
-} from '../../domain/layout/index.ts'
+import type { LayoutResult } from '../../domain/layout/index.ts'
 import {
   getOrientedPaperDimensions,
   type MarginConfig,
@@ -29,26 +22,11 @@ import {
 import type { CutPath, FoldLine, Tab, TemplateItem } from '../../domain/templates/index.ts'
 
 const POINTS_PER_MM = 72 / 25.4
-const REGISTRATION_MARK_HALF_SIZE_MM = 2.6
 
 function mmToPt(value: number) {
   return value * POINTS_PER_MM
 }
 
-function drawOverlapRegion(page: PDFPage, pageHeightMm: number, region: LayoutOverlapRegion) {
-  const topLeft = toPdfPoint(pageHeightMm, { x: region.bounds.minX, y: region.bounds.minY })
-  page.drawRectangle({
-    x: topLeft.x,
-    y: topLeft.y - mmToPt(region.bounds.height),
-    width: mmToPt(region.bounds.width),
-    height: mmToPt(region.bounds.height),
-    color: rgb(0.57, 0.66, 0.86),
-    opacity: 0.06,
-    borderColor: rgb(0.57, 0.66, 0.86),
-    borderWidth: mmToPt(0.12),
-    borderOpacity: 0.16,
-  })
-}
 
 function toPdfPoint(pageHeightMm: number, point: Point) {
   return {
@@ -107,64 +85,6 @@ function drawFoldLine(page: PDFPage, pageHeightMm: number, line: FoldLine) {
   drawOpenPath(page, pageHeightMm, [line.start, line.end], rgb(0.32, 0.49, 0.96), 0.28, [5, 3])
 }
 
-function drawAlignmentGuide(page: PDFPage, pageHeightMm: number, guide: LayoutAlignmentGuide) {
-  drawOpenPath(page, pageHeightMm, [guide.start, guide.end], rgb(0.61, 0.66, 0.76), 0.2, [2, 2])
-}
-
-function drawRegistrationMark(page: PDFPage, pageHeightMm: number, mark: LayoutRegistrationMark) {
-  drawOpenPath(
-    page,
-    pageHeightMm,
-    [
-      { x: mark.x - REGISTRATION_MARK_HALF_SIZE_MM, y: mark.y },
-      { x: mark.x + REGISTRATION_MARK_HALF_SIZE_MM, y: mark.y },
-    ],
-    rgb(0.76, 0.23, 0.27),
-    0.24,
-  )
-  drawOpenPath(
-    page,
-    pageHeightMm,
-    [
-      { x: mark.x, y: mark.y - REGISTRATION_MARK_HALF_SIZE_MM },
-      { x: mark.x, y: mark.y + REGISTRATION_MARK_HALF_SIZE_MM },
-    ],
-    rgb(0.76, 0.23, 0.27),
-    0.24,
-  )
-}
-
-function drawAssemblyLabel(
-  page: PDFPage,
-  pageHeightMm: number,
-  label: LayoutAssemblyLabel,
-  font: PDFFont,
-) {
-  const labelOrigin = toPdfPoint(pageHeightMm, { x: label.x, y: label.y })
-  page.drawText(label.text, {
-    x: labelOrigin.x - label.text.length * 1.85,
-    y: labelOrigin.y - 3,
-    size: 6.5,
-    font,
-    color: rgb(0.47, 0.53, 0.64),
-  })
-}
-
-function drawJoinIndicator(
-  page: PDFPage,
-  pageHeightMm: number,
-  indicator: LayoutJoinIndicator,
-  font: PDFFont,
-) {
-  const origin = toPdfPoint(pageHeightMm, { x: indicator.x, y: indicator.y })
-  page.drawText(indicator.text, {
-    x: origin.x - indicator.text.length * 1.55,
-    y: origin.y - 2.5,
-    size: 6,
-    font,
-    color: rgb(0.21, 0.29, 0.46),
-  })
-}
 
 function drawCalibrationBlock(
   page: PDFPage,
@@ -347,26 +267,7 @@ export async function exportTemplateToPdf({
       endPath(),
     )
 
-    for (const region of layoutPage.overlapRegions) {
-      drawOverlapRegion(page, pageHeightMm, region)
-    }
-
-    for (const guide of layoutPage.alignmentGuides) {
-      drawAlignmentGuide(page, pageHeightMm, guide)
-    }
-
-    for (const mark of layoutPage.registrationMarks) {
-      drawRegistrationMark(page, pageHeightMm, mark)
-    }
-
-    for (const label of layoutPage.assemblyLabels) {
-      drawAssemblyLabel(page, pageHeightMm, label, font)
-    }
-
-    for (const indicator of layoutPage.joinIndicators) {
-      drawJoinIndicator(page, pageHeightMm, indicator, font)
-    }
-
+    
     for (const placement of layoutPage.partPlacements) {
       const part = partsById.get(placement.partId)
       if (!part) {

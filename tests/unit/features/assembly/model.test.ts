@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { generateBoxTemplate } from '../../../../src/domain/shapes/box/index.ts'
-import { buildBoxAssemblyModel } from '../../../../src/features/assembly/model.ts'
+import { generateCylinderTemplate } from '../../../../src/domain/shapes/cylinder/index.ts'
+import { buildBoxAssemblyModel, buildCylinderAssemblyModel } from '../../../../src/features/assembly/model.ts'
 
 describe('buildBoxAssemblyModel', () => {
   it('builds normalized face mappings and instruction steps for open trays', () => {
@@ -56,5 +57,26 @@ describe('buildBoxAssemblyModel', () => {
     expect(baseFace.targetIds.length).toBeGreaterThan(0)
     expect(model.steps[4]!.focusFaceId).toBe('top')
     expect(model.steps[5]!.focusFaceId).toBe('base')
+  })
+
+  it('builds normalized face mappings and sequence steps for cylinders', () => {
+    const { template } = generateCylinderTemplate(
+      {
+        diameterMm: 60,
+        heightMm: 100,
+      },
+      {
+        itemId: 'assembly-model-cylinder',
+        itemName: 'Assembly Model Cylinder',
+      },
+    )
+    const model = buildCylinderAssemblyModel(template)
+
+    expect(model.defaultMode).toBe('finished')
+    expect(model.faces.map((face) => face.label)).toEqual(['Body', 'Top', 'Bottom'])
+    expect(model.steps).toHaveLength(6)
+    expect(model.steps[1]!.cueLabel).toBe('Glue Here')
+    expect(model.steps[2]!.focusFaceId).toBe('top')
+    expect(model.steps[4]!.focusFaceId).toBe('bottom')
   })
 })

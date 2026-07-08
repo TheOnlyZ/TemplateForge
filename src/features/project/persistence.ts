@@ -1,6 +1,8 @@
 import { clampMarginConfig, getDefaultMarginConfig } from '../../domain/paper/index.ts'
 import type { MaterialId } from '../../domain/materials/index.ts'
 import type { BoxInput, BoxStyle } from '../../domain/shapes/box/index.ts'
+import type { CylinderInput } from '../../domain/shapes/cylinder/index.ts'
+import type { ShapeType } from '../../domain/shapes/shared/index.ts'
 import type { UnitSystem } from '../../domain/units/index.ts'
 import {
   createDefaultProjectState,
@@ -12,7 +14,9 @@ import {
 
 const PROJECT_FILE_VERSION = 1
 const VALID_UNIT_SYSTEMS = ['metric', 'imperial'] satisfies UnitSystem[]
+const VALID_SHAPE_TYPES = ['box', 'cylinder'] satisfies ShapeType[]
 const VALID_DRAFT_STEPS = [
+  'shape',
   'dimensions',
   'style',
   'material',
@@ -73,17 +77,34 @@ function parseBoxInput(value: unknown, fallback: BoxInput): BoxInput {
   }
 }
 
+function parseCylinderInput(value: unknown, fallback: CylinderInput): CylinderInput {
+  if (!isRecord(value)) {
+    return { ...fallback }
+  }
+
+  return {
+    diameterMm: parseNumber(value.diameterMm, fallback.diameterMm),
+    heightMm: parseNumber(value.heightMm, fallback.heightMm),
+  }
+}
+
+function parseShapeType(value: unknown, fallback: ShapeType): ShapeType {
+  return VALID_SHAPE_TYPES.includes(value as ShapeType) ? (value as ShapeType) : fallback
+}
+
 function parseDraft(value: unknown, fallback: BoxDraft): BoxDraft {
   if (!isRecord(value)) {
     return {
       ...fallback,
       margins: { ...fallback.margins },
       boxInput: { ...fallback.boxInput },
+      cylinderInput: { ...fallback.cylinderInput },
     }
   }
 
   return {
     name: parseString(value.name, fallback.name),
+    shapeType: parseShapeType(value.shapeType, fallback.shapeType),
     materialId: VALID_MATERIAL_IDS.includes(value.materialId as MaterialId)
       ? (value.materialId as MaterialId)
       : fallback.materialId,
@@ -106,6 +127,7 @@ function parseDraft(value: unknown, fallback: BoxDraft): BoxDraft {
         : { ...fallback.margins },
     ),
     boxInput: parseBoxInput(value.boxInput, fallback.boxInput),
+    cylinderInput: parseCylinderInput(value.cylinderInput, fallback.cylinderInput),
   }
 }
 
@@ -133,12 +155,14 @@ export function createProjectFileContents(snapshot: ProjectStateSnapshot, projec
         ...snapshot.draft,
         margins: { ...snapshot.draft.margins },
         boxInput: { ...snapshot.draft.boxInput },
+        cylinderInput: { ...snapshot.draft.cylinderInput },
       },
       draftStep: snapshot.draftStep,
       queueItems: snapshot.queueItems.map((item) => ({
         ...item,
         margins: { ...item.margins },
         boxInput: { ...item.boxInput },
+        cylinderInput: { ...item.cylinderInput },
       })),
       nextQueueIndex: snapshot.nextQueueIndex,
       editingQueueItemId: snapshot.editingQueueItemId,
@@ -194,6 +218,7 @@ export function createEmptyProjectSnapshot(): ProjectStateSnapshot {
       ...fallbackState.draft,
       margins: getDefaultMarginConfig(),
       boxInput: { ...fallbackState.draft.boxInput },
+      cylinderInput: { ...fallbackState.draft.cylinderInput },
     },
     queueItems: [],
     editingQueueItemId: null,

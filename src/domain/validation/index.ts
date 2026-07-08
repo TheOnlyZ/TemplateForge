@@ -51,6 +51,10 @@ export interface LayoutValidationOptions {
 
 export const DEFAULT_MIN_DIMENSION_MM = 12.7
 export const DEFAULT_MAX_DIMENSION_MM = 914.4
+export const CYLINDER_MIN_DIAMETER_MM = 12.7
+export const CYLINDER_MAX_DIAMETER_MM = 400
+export const CYLINDER_MIN_HEIGHT_MM = 12.7
+export const CYLINDER_MAX_HEIGHT_MM = 914.4
 export const DEFAULT_PAGE_WARNING_COUNT = 8
 export const DEFAULT_MAX_PAGE_COUNT = 24
 export const DEFAULT_MINIMUM_TAB_WIDTH_MM = 6
@@ -96,6 +100,47 @@ export function validateTemplateInput(
         message: `${dimensionName} exceeds the supported maximum dimension of ${maxDimensionMm} mm.`,
       })
     }
+  }
+
+  return buildValidationResult(messages)
+}
+
+export function validateCylinderInput(options: {
+  diameterMm: number
+  heightMm: number
+}): ValidationResult {
+  const messages: ValidationMessage[] = []
+
+  if (options.diameterMm < CYLINDER_MIN_DIAMETER_MM) {
+    messages.push({
+      code: 'min-dimension',
+      severity: 'error',
+      message: `Diameter is below the supported minimum of ${CYLINDER_MIN_DIAMETER_MM} mm.`,
+    })
+  }
+
+  if (options.diameterMm > CYLINDER_MAX_DIAMETER_MM) {
+    messages.push({
+      code: 'max-dimension',
+      severity: 'error',
+      message: `Diameter exceeds the supported maximum of ${CYLINDER_MAX_DIAMETER_MM} mm — the resulting body wrap would be too wide for reliable layout.`,
+    })
+  }
+
+  if (options.heightMm < CYLINDER_MIN_HEIGHT_MM) {
+    messages.push({
+      code: 'min-dimension',
+      severity: 'error',
+      message: `Height is below the supported minimum of ${CYLINDER_MIN_HEIGHT_MM} mm.`,
+    })
+  }
+
+  if (options.heightMm > CYLINDER_MAX_HEIGHT_MM) {
+    messages.push({
+      code: 'max-dimension',
+      severity: 'error',
+      message: `Height exceeds the supported maximum of ${CYLINDER_MAX_HEIGHT_MM} mm.`,
+    })
   }
 
   return buildValidationResult(messages)

@@ -260,22 +260,14 @@ describe('exportTemplateToPdf', () => {
     expect(legalPdf.getPage(0)?.getHeight()).toBeCloseTo(mmToPt(215.9), 1)
   })
 
-  it('exports oversized templates as multiple tiled PDF pages', async () => {
+  it('returns overflow result for templates that do not fit the printable area', async () => {
     const paper = getPaperDefinition('a4')
     const template = createOversizedTemplate(320, 430)
     const layout = layoutTemplate(template, paper, 'portrait', getDefaultMarginConfig())
 
-    expect(layout.hasLegalPlacement).toBe(true)
-    expect(layout.pageCount).toBe(4)
-    expect(layout.pages.every((page) => page.registrationMarks.length > 0)).toBe(true)
-    expect(layout.pages.every((page) => page.assemblyLabels.length > 0)).toBe(true)
-    expect(layout.pages.every((page) => page.joinIndicators.length > 0)).toBe(true)
-    expect(layout.pages.every((page) => page.overlapRegions.length > 0)).toBe(true)
-
-    const bytes = await exportTemplateToPdf({ template, layout, paper })
-    const pdf = await PDFDocument.load(bytes)
-
-    expect(pdf.getPageCount()).toBe(4)
+    expect(layout.hasLegalPlacement).toBe(false)
+    expect(layout.printableAreaOverflow).toBe(true)
+    expect(layout.pageCount).toBe(0)
   })
 
   it('nests compatible queued items onto shared pages during batch export', async () => {

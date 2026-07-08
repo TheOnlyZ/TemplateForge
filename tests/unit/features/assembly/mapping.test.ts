@@ -75,7 +75,7 @@ describe('buildAssemblyPartMappings', () => {
     expect(mappings[0]!.pageLabels).toEqual(['Page 1'])
   })
 
-  it('maps a tiled part to each printable tile label', () => {
+  it('returns empty mappings when the layout overflows', () => {
     const template = createOversizedTemplate(320, 430)
     const layout = layoutTemplate(
       template,
@@ -85,13 +85,10 @@ describe('buildAssemblyPartMappings', () => {
     )
     const mappings = buildAssemblyPartMappings(template, layout)
 
+    expect(layout.printableAreaOverflow).toBe(true)
     expect(mappings).toHaveLength(1)
-    expect(mappings[0]!.tileCount).toBe(4)
-    expect(mappings[0]!.pageLabels).toEqual([
-      'Page 1 • Tile 1,1',
-      'Page 2 • Tile 1,2',
-      'Page 3 • Tile 2,1',
-      'Page 4 • Tile 2,2',
-    ])
+    expect(mappings[0]!.pageNumbers).toEqual([])
+    expect(mappings[0]!.pageLabels).toEqual([])
+    expect(mappings[0]!.tileCount).toBe(0)
   })
 })
