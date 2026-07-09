@@ -7,8 +7,8 @@ import type { AssemblyFaceId, AssemblyMode, AssemblySequenceStepId, AssemblyMode
 import { TemplatePreview } from '../preview/TemplatePreview.tsx'
 import { BoxWizard } from '../wizard/box-wizard/BoxWizard.tsx'
 import { Toolbar } from './Toolbar.tsx'
+import { Button } from '../../components/Button.tsx'
 import { QueueSection } from './QueueSection.tsx'
-import { ValidationPanel } from './ValidationPanel.tsx'
 import {
   buildPdfFileName,
   buildProjectPdfFileName,
@@ -33,6 +33,7 @@ import { formatLength } from '../../domain/units/index.ts'
 import {
   DEFAULT_MAX_DIMENSION_MM,
   DEFAULT_MIN_DIMENSION_MM,
+  type ValidationMessage,
   mergeValidationResults,
   validateCylinderInput,
   validateLayoutResult,
@@ -41,9 +42,11 @@ import {
   validateTemplateInput,
 } from '../../domain/validation/index.ts'
 import { type BoxDraft, useAppStore } from '../../store/app-store.ts'
+import type { LayoutStatus } from '../../domain/layout/index.ts'
 import styles from './WorkspacePage.module.css'
 
-const NET_ORDER: BoxNetType[] = ['strip', 'cross', 't-layout']
+const GLUE_TAB_CARTON_NET_ORDER: BoxNetType[] = ['strip']
+const ALL_NET_ORDER: BoxNetType[] = ['strip', 'cross', 't-layout']
 
 function calculateTotalOverflow(layout: { printableAreaOverflow: boolean; pages: { printableBounds: { width: number; height: number }; partPlacements: { bounds: { x: number; y: number; width: number; height: number } }[] }[] }) {
   if (!layout.printableAreaOverflow) return 0
@@ -87,7 +90,8 @@ function buildDraftPreview(draft: BoxDraft, templateId?: string) {
       margins: draft.margins,
     })
     const validation = mergeValidationResults(shapeValidation, layoutValidation)
-    return { paper, template, layout, shapeValidation, validation, netType: null as BoxNetType | null }
+    const layoutStatus = buildLayoutStatus(layout, validation.messages)
+    return { paper, template, layout, shapeValidation, validation, netType: null as BoxNetType | null, layoutStatus }
   }
 
   const ctx = { itemId: tid, itemName: draft.name }
@@ -97,7 +101,9 @@ function buildDraftPreview(draft: BoxDraft, templateId?: string) {
   let bestNetType: BoxNetType = 'strip'
   let bestNetValidation = null as ReturnType<typeof validateNet> | null
 
-  for (const netType of NET_ORDER) {
+  const netOrder = draft.boxInput.style === 'glue-tab-carton' ? GLUE_TAB_CARTON_NET_ORDER : ALL_NET_ORDER
+
+  for (const netType of netOrder) {
     const generator = getNetGenerator(netType)
     const net = generator(input)
     const netVal = validateNet(net, input)
@@ -150,8 +156,9 @@ function buildDraftPreview(draft: BoxDraft, templateId?: string) {
     margins: draft.margins,
   })
   const validation = mergeValidationResults(shapeValidation, layoutValidation)
+  const layoutStatus = buildLayoutStatus(layout, validation.messages)
 
-  return { paper, template, layout, shapeValidation, validation, netType: bestNetType }
+  return { paper, template, layout, shapeValidation, validation, netType: bestNetType, layoutStatus }
 }
 
 function getStyleLabel(style: string) {
@@ -178,6 +185,43 @@ function hasBlockingIssues(messages: ReturnType<typeof buildDraftPreview>['valid
   return messages.some((message) => message.severity === 'error')
 }
 
+function buildLayoutStatus(
+  layout: ReturnType<typeof buildDraftPreview>['layout'],
+  messages: ReturnType<typeof buildDraftPreview>['validation']['messages'],
+): LayoutStatus {
+  const errorCount = messages.filter((m) => m.severity === 'error').length
+  const warningCount = messages.filter((m) => m.severity === 'warning').length
+
+  if (layout.layoutType === 'multi-piece') {
+    return {
+      type: 'multi-piece',
+      description: `Prints as ${layout.assemblyCount} pieces — join labels included.`,
+      errorCount,
+      warningCount,
+    }
+  }
+
+  if (layout.hasLegalPlacement) {
+    return {
+      type: 'single-piece',
+      description: 'Fits on one page — ready to export.',
+      errorCount,
+      warningCount,
+    }
+  }
+
+  const errorDescriptions = messages
+    .filter((m) => m.severity === 'error')
+    .map((m) => m.message)
+
+  return {
+    type: 'overflow',
+    description: errorDescriptions[0] ?? 'Cannot fit on the selected paper. Try a larger size or reduce margins.',
+    errorCount,
+    warningCount,
+  }
+}
+
 export function WorkspacePage() {
   const {
     draft,
@@ -200,6 +244,7 @@ export function WorkspacePage() {
   const [hoveredAssemblyFaceId, setHoveredAssemblyFaceId] = useState<AssemblyFaceId | null>(null)
   const [selectedAssemblyFaceId, setSelectedAssemblyFaceId] = useState<AssemblyFaceId | null>(null)
   const [activeAssemblyStepId, setActiveAssemblyStepId] = useState<AssemblySequenceStepId | null>(null)
+  const [queueOpen, setQueueOpen] = useState(false)
   const editingQueueItem =
     editingQueueItemId === null
       ? null
@@ -356,22 +401,6 @@ export function WorkspacePage() {
       />
 
       <main className={styles.workspace}>
-        <aside>
-          <QueueSection
-            queueItems={queueItems}
-            editingQueueItemId={editingQueueItemId}
-            unitSystem={unitSystem}
-            onExportBatchPdf={exportProjectQueuePdf}
-            onExportItemPdf={exportQueueItemPdf}
-            onExportItemSvg={exportQueueItemSvg}
-            onEditItem={startEditingQueueItem}
-            onDuplicateItem={duplicateQueueItem}
-            onRemoveItem={removeQueueItem}
-            exportableCount={exportableQueueItems.length}
-            buildItemPreview={(item) => buildDraftPreview(item, item.id)}
-          />
-        </aside>
-
         <section className={styles.canvas}>
           <div className={styles.infoBar}>
             <span className={styles.chip}>
@@ -408,7 +437,13 @@ export function WorkspacePage() {
             </span>
             <span className={`${styles.chip} ${preview.layout.hasLegalPlacement ? styles.chipOk : styles.chipWarn}`}>
               <span className={styles.chipLabel}>Status</span>
-              <span className={styles.chipValue}>{preview.layout.hasLegalPlacement ? 'Fits' : 'Overflow'}</span>
+              <span className={styles.chipValue}>
+                {preview.layout.layoutType === 'multi-piece'
+                  ? `${preview.layout.assemblyCount} pieces`
+                  : preview.layout.hasLegalPlacement
+                    ? 'Fits'
+                    : 'Overflow'}
+              </span>
             </span>
           </div>
 
@@ -468,7 +503,7 @@ export function WorkspacePage() {
           </div>
         </section>
 
-        <aside>
+        <aside className={styles.rightPanel}>
           <BoxWizard
             unitSystem={unitSystem}
             previewTemplate={preview.template}
@@ -476,12 +511,34 @@ export function WorkspacePage() {
             canExportPreviewSvg={canExportPreviewSvg}
             onExportPreviewPdf={exportDraftPdf}
             onExportPreviewSvg={exportDraftSvg}
+            layoutStatus={preview.layoutStatus}
+            messages={preview.validation.messages}
           />
         </aside>
       </main>
 
       <div className={styles.validationBar}>
-        <ValidationPanel messages={preview.validation.messages} />
+        <div className={styles.queueToggle} role="button" tabIndex={0} onClick={() => setQueueOpen((v) => !v)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setQueueOpen((v) => !v) }}}>
+          <span>{queueOpen ? '▾' : '▸'} Project Queue ({queueItems.length} item{queueItems.length !== 1 ? 's' : ''})</span>
+          {queueItems.length > 0 && <span className={styles.queueToggleActions}>
+            <Button size="sm" onClick={(e) => { e.stopPropagation(); exportProjectQueuePdf() }} disabled={exportableQueueItems.length === 0}>Batch PDF</Button>
+          </span>}
+        </div>
+        {queueOpen && (
+          <QueueSection
+            queueItems={queueItems}
+            editingQueueItemId={editingQueueItemId}
+            unitSystem={unitSystem}
+            onExportBatchPdf={exportProjectQueuePdf}
+            onExportItemPdf={exportQueueItemPdf}
+            onExportItemSvg={exportQueueItemSvg}
+            onEditItem={startEditingQueueItem}
+            onDuplicateItem={duplicateQueueItem}
+            onRemoveItem={removeQueueItem}
+            exportableCount={exportableQueueItems.length}
+            buildItemPreview={(item) => buildDraftPreview(item, item.id)}
+          />
+        )}
       </div>
     </>
   )

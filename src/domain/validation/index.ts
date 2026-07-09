@@ -93,6 +93,17 @@ export function validateTemplateInput(
   const messages: ValidationMessage[] = []
 
   for (const [dimensionName, valueMm] of Object.entries(options.dimensionsMm)) {
+    if (dimensionName === 'glueTabWidth') {
+      if (valueMm < DEFAULT_MINIMUM_TAB_WIDTH_MM) {
+        messages.push({
+          code: 'tab-too-small',
+          severity: 'warning',
+          message: `Glue tab width is narrower than the recommended ${DEFAULT_MINIMUM_TAB_WIDTH_MM} mm minimum.`,
+        })
+      }
+      continue
+    }
+
     if (valueMm < minDimensionMm) {
       messages.push({
         code: 'min-dimension',

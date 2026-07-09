@@ -10,11 +10,12 @@ I wanted a charger case but couldn't find accurate, ready-to-print templates onl
 
 - True-scale printable templates from finished dimensions
 - Rectangular boxes (glue-tab, tuck-carton, open-tray), cylinders, cones, prisms, tubes, sleeves, drawer boxes
-- Multi-net layout engine — tries strip, cross, and T-layout unfoldings
+- Multi-net layout engine — tries strip, cross, and T-layout unfoldings; glue-tab carton defaults to strip (Front/Back never adjacent)
+- **Auto multi-piece splitting** — nets that exceed the printable area are split along fold lines into 2 printable assemblies with a real glue tab on one assembly and a receiving-edge label on the other
 - Auto-optimisation for Letter, Legal, A4 paper sizes
 - Print-ready vector PDFs with calibration rulers
 - Live 2D preview synchronised with 3D assembly (finished, exploded, step-by-step)
-- Queue & batch multiple shapes into a single print job
+- Collapsible project queue — export immediately or batch multiple shapes
 - Imperial / metric input
 - Project persistence — save, reopen, duplicate, edit
 
@@ -51,12 +52,14 @@ src/
 
 ## Status
 
-**168 tests across 35 files** — shape generators, net validation, layout engine, React components, store, persistence, PDF/SVG export.
+**169 tests across 36 files** — shape generators, net validation, layout engine (including multi-piece splitting with join tabs), React components, store, persistence, PDF/SVG export.
 
 ### UI
 
-- **Tailwind v4 + shadcn/ui** — Button, Card, Input, Select, Badge migrated; incremental migration from CSS modules
-- **3-column layout** — queue (left, 16rem) / canvas (center, 1fr) / wizard (right, 22rem); validation bar at bottom; collapses to single column ≤1280px
+- **Tailwind v4 + shadcn/ui** — Button, Card, Input, Select, Badge, Stepper migrated
+- **2-column layout** — canvas (1fr) / wizard (right, 20rem); collapsible queue drawer below the grid; collapsible Issues section inside wizard card
+- **6-step wizard** — Shape → Dimensions → Style → Material → Paper → Preview; inline status badge (Fits / Multi-piece / Blocked) with error/warning counts; auto-advance on (shape/style/material) selection
+- **Multi-piece layout** — nets that exceed the printable area are automatically split along fold lines into 2 printable assemblies with a physical glue tab, receiving-edge label, and assembly labels
 - **Dark theme** — `#0b1119` background, 150ms transitions, focus rings, reduced border opacity
 
 ### Future

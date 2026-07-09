@@ -37,6 +37,8 @@ describe('BoxWizard', () => {
         canExportPreviewSvg={true}
         onExportPreviewPdf={vi.fn()}
         onExportPreviewSvg={vi.fn()}
+        layoutStatus={{ type: 'single-piece', description: 'Fits on one page', errorCount: 0, warningCount: 0 }}
+        messages={[]}
       />,
     )
 

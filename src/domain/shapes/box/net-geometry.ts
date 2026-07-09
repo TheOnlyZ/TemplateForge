@@ -6,10 +6,15 @@ import { layoutTemplate, labelToName, layoutOpenTrayTemplate, stripNetTemplate, 
 
 const GLUE_TAB_PERCENT = 0.18
 
-function attachGlueTab(faces: Face[]): GlueTab {
+function glueTabWidth(input: BoxInput): number {
+  return input.glueTabWidthMm > 0
+    ? input.glueTabWidthMm
+    : Math.max(input.externalWidthMm * GLUE_TAB_PERCENT, 10)
+}
+
+function attachGlueTab(faces: Face[], input: BoxInput): GlueTab {
   const leftFace = faces.find((f) => f.name === 'Left Panel')!
-  const { externalWidthMm: W } = findDimensions(leftFace)
-  const glueWidth = Math.max(W * GLUE_TAB_PERCENT, 10)
+  const glueWidth = glueTabWidth(input)
   const poly = createVerticalGlueTab(
     leftFace.polygon[2]!.x,
     leftFace.polygon[0]!.y,
@@ -127,7 +132,7 @@ function buildTuckFlap(id: string, label: string, face: Face, depth: number, dir
 
 export function buildStripNet(input: BoxInput): Net {
   const { faces, folds } = layoutTemplate(stripNetTemplate, input)
-  const glueTab = attachGlueTab(faces)
+  const glueTab = attachGlueTab(faces, input)
   const flaps = generateFlaps(stripNetTemplate, input, faces)
 
   return {
@@ -141,7 +146,7 @@ export function buildStripNet(input: BoxInput): Net {
 
 export function buildCrossNet(input: BoxInput): Net {
   const { faces, folds } = layoutTemplate(crossNetTemplate, input)
-  const glueTab = attachGlueTab(faces)
+  const glueTab = attachGlueTab(faces, input)
   const flaps = generateFlaps(crossNetTemplate, input, faces)
 
   return {
@@ -156,8 +161,7 @@ export function buildCrossNet(input: BoxInput): Net {
 export function buildTNetCarton(input: BoxInput): Net {
   const { faces, folds } = layoutTemplate(tLayoutNetTemplate, input)
   const leftFace = faces.find((f) => f.name === 'Left Panel')!
-  const { externalWidthMm: W } = findDimensions(leftFace)
-  const glueWidth = Math.max(W * GLUE_TAB_PERCENT, 10)
+  const glueWidth = glueTabWidth(input)
 
   const glueTab: GlueTab = {
     id: 'gluetab:seam',

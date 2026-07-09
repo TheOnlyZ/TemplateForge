@@ -17,6 +17,9 @@ import {
 import type { BoxStyle } from '../../../domain/shapes/box/index.ts'
 import type { ShapeType } from '../../../domain/shapes/shared/index.ts'
 import { useAppStore, type BoxWizardStepId } from '../../../store/app-store.ts'
+import type { LayoutStatus } from '../../../domain/layout/index.ts'
+import type { ValidationMessage } from '../../../domain/validation/index.ts'
+import { useEffect, useRef, useState } from 'react'
 
 const steps: { id: BoxWizardStepId; label: string }[] = [
   { id: 'shape', label: 'Shape' },
@@ -25,7 +28,6 @@ const steps: { id: BoxWizardStepId; label: string }[] = [
   { id: 'material', label: 'Material' },
   { id: 'paper', label: 'Paper' },
   { id: 'preview', label: 'Preview' },
-  { id: 'queue', label: 'Queue' },
 ]
 
 const shapeOptions: { id: ShapeType; title: string }[] = [
@@ -46,6 +48,8 @@ interface BoxWizardProps {
   canExportPreviewSvg: boolean
   onExportPreviewPdf: () => void
   onExportPreviewSvg: () => void
+  layoutStatus: LayoutStatus
+  messages: ValidationMessage[]
 }
 
 export function BoxWizard({
@@ -55,6 +59,8 @@ export function BoxWizard({
   canExportPreviewSvg,
   onExportPreviewPdf,
   onExportPreviewSvg,
+  layoutStatus,
+  messages,
 }: BoxWizardProps) {
   const {
     addDraftToQueue,
@@ -81,6 +87,39 @@ export function BoxWizard({
   const isEditingQueueItem = editingQueueItemId !== null
   const alternateUnitSystem = unitSystem === 'metric' ? 'imperial' : 'metric'
 
+  const [issuesOpen, setIssuesOpen] = useState(messages.length > 0)
+  const prevShapeType = useRef(draft.shapeType)
+  const prevStyle = useRef(draft.boxInput.style)
+  const prevMaterialId = useRef(draft.materialId)
+
+  useEffect(() => {
+    if (messages.length > 0) setIssuesOpen(true)
+  }, [messages.length])
+
+  useEffect(() => {
+    if (draftStep !== 'shape') return
+    if (draft.shapeType === prevShapeType.current) return
+    prevShapeType.current = draft.shapeType
+    const timer = setTimeout(() => nextDraftStep(), 300)
+    return () => clearTimeout(timer)
+  }, [draft.shapeType, draftStep])
+
+  useEffect(() => {
+    if (draftStep !== 'style') return
+    if (draft.boxInput.style === prevStyle.current) return
+    prevStyle.current = draft.boxInput.style
+    const timer = setTimeout(() => nextDraftStep(), 300)
+    return () => clearTimeout(timer)
+  }, [draft.boxInput.style, draftStep])
+
+  useEffect(() => {
+    if (draftStep !== 'material') return
+    if (draft.materialId === prevMaterialId.current) return
+    prevMaterialId.current = draft.materialId
+    const timer = setTimeout(() => nextDraftStep(), 300)
+    return () => clearTimeout(timer)
+  }, [draft.materialId, draftStep])
+
   function formatInputValue(valueMm: number) {
     return formatEditableLength(valueMm, unitSystem)
   }
@@ -96,7 +135,15 @@ export function BoxWizard({
   const headerNode = (
     <>
       <span>Shape Wizard</span>
-      <Badge>Step {stepIndex + 1} of {steps.length}</Badge>
+      <span style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
+        {layoutStatus.errorCount > 0 && (
+          <Badge variant="accent" dot>{layoutStatus.errorCount} error{layoutStatus.errorCount !== 1 ? 's' : ''}</Badge>
+        )}
+        {layoutStatus.errorCount === 0 && layoutStatus.warningCount > 0 && (
+          <Badge variant="warning" dot>{layoutStatus.warningCount} warning{layoutStatus.warningCount !== 1 ? 's' : ''}</Badge>
+        )}
+        <Badge>Step {stepIndex + 1} of {steps.length}</Badge>
+      </span>
     </>
   )
 
@@ -106,6 +153,17 @@ export function BoxWizard({
         steps={steps}
         activeIndex={stepIndex}
       />
+
+      <div className={`layout-status layout-status--${layoutStatus.type}`}>
+        <Badge variant={
+          layoutStatus.type === 'single-piece' ? 'success' :
+          layoutStatus.type === 'multi-piece' ? 'warning' : 'accent'
+        } dot>
+          {layoutStatus.type === 'single-piece' ? 'Fits' :
+           layoutStatus.type === 'multi-piece' ? 'Multi-piece' : 'Blocked'}
+        </Badge>
+        <span className="layout-status__text">{layoutStatus.description}</span>
+      </div>
 
       {draftStep === 'shape' && (
         <div className="style-grid">
@@ -299,27 +357,7 @@ export function BoxWizard({
 
           <div className="wizard-actions-inline">
             <div className="toolbar-group">
-              <Button onClick={onExportPreviewPdf} disabled={!canExportPreviewPdf}>
-                PDF
-              </Button>
-              <Button onClick={onExportPreviewSvg} disabled={!canExportPreviewSvg}>
-                SVG
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {draftStep === 'queue' && (
-        <div className="wizard-section">
-          <p className="toolbar-note">
-            {isEditingQueueItem
-              ? 'Update the queued item with current wizard parameters.'
-              : 'Save the current parameters to the project queue for export.'}
-          </p>
-          <div className="wizard-actions-inline">
-            <div className="toolbar-group">
-              <Button onClick={() => addDraftToQueue()} disabled={!canExportPreviewPdf}>
+              <Button onClick={() => addDraftToQueue()} variant="ghost" disabled={!canExportPreviewPdf} title={!canExportPreviewPdf ? layoutStatus.description : ''}>
                 {isEditingQueueItem ? 'Save Changes' : 'Add to Queue'}
               </Button>
               {isEditingQueueItem && (
@@ -332,13 +370,53 @@ export function BoxWizard({
         </div>
       )}
 
+      <div className="wizard-issues">
+        <button
+          type="button"
+          className={`wizard-issues__toggle${issuesOpen ? ' wizard-issues__toggle--open' : ''}`}
+          onClick={() => setIssuesOpen((v) => !v)}
+        >
+          <span>Issues</span>
+          {messages.length === 0 ? (
+            <span className="wizard-issues__count wizard-issues__count--ok">✓ No issues</span>
+          ) : (
+            <span className="wizard-issues__count wizard-issues__count--problems">
+              {messages.filter(m => m.severity === 'error').length > 0
+                ? `${messages.filter(m => m.severity === 'error').length} error${messages.filter(m => m.severity === 'error').length !== 1 ? 's' : ''}`
+                : `${messages.filter(m => m.severity === 'warning').length} warning${messages.filter(m => m.severity === 'warning').length !== 1 ? 's' : ''}`}
+              <span className="wizard-issues__arrow">{issuesOpen ? '▾' : '▸'}</span>
+            </span>
+          )}
+        </button>
+        {issuesOpen && messages.length > 0 && (
+          <ul className="wizard-issues__list">
+            {messages.map((message) => (
+              <li key={message.code + message.message} className="wizard-issues__item">
+                <Badge variant={message.severity === 'warning' ? 'warning' : 'accent'} dot>{message.severity}</Badge>
+                <span className="wizard-issues__text">{message.message}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
       <div className="wizard-footer">
-        <Button onClick={() => previousDraftStep()} disabled={stepIndex === 0}>
-          Back
-        </Button>
-        <Button onClick={() => nextDraftStep()} disabled={stepIndex === steps.length - 1}>
-          Next
-        </Button>
+        <div className="toolbar-group">
+          <Button onClick={onExportPreviewPdf} disabled={!canExportPreviewPdf} title={!canExportPreviewPdf ? layoutStatus.description : ''}>
+            PDF
+          </Button>
+          <Button onClick={onExportPreviewSvg} disabled={!canExportPreviewSvg} title={!canExportPreviewSvg ? layoutStatus.description : ''}>
+            SVG
+          </Button>
+        </div>
+        <div className="toolbar-group">
+          <Button onClick={() => previousDraftStep()} disabled={stepIndex === 0}>
+            Back
+          </Button>
+          <Button onClick={() => nextDraftStep()} disabled={stepIndex === steps.length - 1}>
+            Next
+          </Button>
+        </div>
       </div>
     </Card>
   )

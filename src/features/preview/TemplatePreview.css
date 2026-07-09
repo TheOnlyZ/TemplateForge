@@ -1,6 +1,7 @@
 .template-preview {
   width: 100%;
   min-height: 22rem;
+  max-height: 50vh;
   border-radius: var(--radius-md);
   background:
     linear-gradient(to right, rgba(113, 127, 150, 0.06) 1px, transparent 1px),

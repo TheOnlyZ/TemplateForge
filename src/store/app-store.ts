@@ -19,7 +19,6 @@ export type BoxWizardStepId =
   | 'material'
   | 'paper'
   | 'preview'
-  | 'queue'
 
 export interface BoxDraft {
   name: string
@@ -52,7 +51,6 @@ const wizardSteps: BoxWizardStepId[] = [
   'material',
   'paper',
   'preview',
-  'queue',
 ]
 
 function createDefaultDraft(index: number): BoxDraft {

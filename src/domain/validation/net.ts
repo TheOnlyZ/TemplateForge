@@ -312,6 +312,18 @@ function pointOnSegment(p: { x: number; y: number }, a: { x: number; y: number }
   return true
 }
 
+function pointInPolygon(p: { x: number; y: number }, polygon: { x: number; y: number }[]): boolean {
+  let inside = false
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const pi = polygon[i]!
+    const pj = polygon[j]!
+    if ((pi.y > p.y) !== (pj.y > p.y) && p.x < ((pj.x - pi.x) * (p.y - pi.y)) / (pj.y - pi.y) + pi.x) {
+      inside = !inside
+    }
+  }
+  return inside
+}
+
 function polygonsOverlap(polyA: { x: number; y: number }[], polyB: { x: number; y: number }[]): boolean {
   for (let i = 0; i < polyA.length; i++) {
     const a1 = polyA[i]!
@@ -327,6 +339,10 @@ function polygonsOverlap(polyA: { x: number; y: number }[], polyB: { x: number; 
     }
   }
 
+  if (pointInPolygon(polyA[0]!, polyB) || pointInPolygon(polyB[0]!, polyA)) {
+    return true
+  }
+
   return false
 }
 
@@ -340,14 +356,15 @@ function segmentsIntersect(
   const d1y = a2.y - a1.y
   const d2x = b2.x - b1.x
   const d2y = b2.y - b1.y
-  const rxs = (b1.x - a1.x) * d1y - (b1.y - a1.y) * d1x
+  const denom = d1x * d2y - d1y * d2x
 
-  if (Math.abs(d1x * d2y - d1y * d2x) < 1e-10) {
+  if (Math.abs(denom) < 1e-10) {
     return false
   }
 
-  const t = ((b1.x - a1.x) * d2y - (b1.y - a1.y) * d2x) / (d1x * d2y - d1y * d2x)
-  const u = rxs / (d1x * d2y - d1y * d2x)
+  const t = ((b1.x - a1.x) * d2y - (b1.y - a1.y) * d2x) / denom
+  const u = ((b1.x - a1.x) * d1y - (b1.y - a1.y) * d1x) / denom
 
-  return t >= 0 && t <= 1 && u >= 0 && u <= 1
+  const eps = 1e-10
+  return t > eps && t < 1 - eps && u > eps && u < 1 - eps
 }

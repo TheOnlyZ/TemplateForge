@@ -205,7 +205,8 @@ export async function exportTemplateToPdf({
   const pdf = await PDFDocument.create()
   const font = await pdf.embedFont(StandardFonts.Helvetica)
   const boldFont = await pdf.embedFont(StandardFonts.HelveticaBold)
-  const partsById = new Map(template.parts.map((part) => [part.id, part]))
+  const sourceTemplate = layout.splitTemplate ?? template
+  const partsById = new Map(sourceTemplate.parts.map((part) => [part.id, part]))
 
   for (const layoutPage of layout.pages) {
     const { widthMm: pageWidthMm, heightMm: pageHeightMm } = getOrientedPaperDimensions(
@@ -255,6 +256,29 @@ export async function exportTemplateToPdf({
       borderWidth: mmToPt(0.2),
       opacity: 0,
     })
+
+    for (const label of layoutPage.assemblyLabels) {
+      const labelPos = toPdfPoint(pageHeightMm, { x: printableBounds.minX + 8, y: printableBounds.minY + 8 })
+      page.drawText(label.text, {
+        x: labelPos.x,
+        y: labelPos.y,
+        size: 10,
+        font: boldFont,
+        color: rgb(0.12, 0.14, 0.18),
+      })
+    }
+
+    for (const indicator of layoutPage.joinIndicators) {
+      const indicatorPos = toPdfPoint(pageHeightMm, { x: printableBounds.minX + printableBounds.width / 2 - 20, y: printableBounds.minY + printableBounds.height / 2 })
+      page.drawText(indicator.text, {
+        x: indicatorPos.x,
+        y: indicatorPos.y,
+        size: 9,
+        font: boldFont,
+        color: rgb(0.9, 0.4, 0.1),
+      })
+    }
+
     page.pushOperators(
       pushGraphicsState(),
       rectangle(
@@ -282,26 +306,26 @@ export async function exportTemplateToPdf({
         ...part.tabIds,
         ...part.joinEdgeIds,
       ])
-      const placedCutPaths = template.cutPaths.filter((path) => path.partId === part.id).map((path) => ({
+      const placedCutPaths = sourceTemplate.cutPaths.filter((path) => part.cutPathIds.includes(path.id)).map((path) => ({
         ...path,
         path: path.path.map((point) => ({
           x: point.x + placement.offsetX,
           y: point.y + placement.offsetY,
         })),
       }))
-      const placedTabs = template.tabs.filter((tab) => tab.partId === part.id).map((tab) => ({
+      const placedTabs = sourceTemplate.tabs.filter((tab) => part.tabIds.includes(tab.id)).map((tab) => ({
         ...tab,
         outline: tab.outline.map((point) => ({
           x: point.x + placement.offsetX,
           y: point.y + placement.offsetY,
         })),
       }))
-      const placedFoldLines = template.foldLines.filter((line) => line.partId === part.id).map((line) => ({
+      const placedFoldLines = sourceTemplate.foldLines.filter((line) => part.foldLineIds.includes(line.id)).map((line) => ({
         ...line,
         start: { x: line.start.x + placement.offsetX, y: line.start.y + placement.offsetY },
         end: { x: line.end.x + placement.offsetX, y: line.end.y + placement.offsetY },
       }))
-      const placedAnnotations = template.annotations
+      const placedAnnotations = sourceTemplate.annotations
         .filter(
           (annotation) =>
             annotation.targetIds.length === 0 ||

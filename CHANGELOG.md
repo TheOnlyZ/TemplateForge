@@ -1,5 +1,40 @@
 # Changelog
 
+## v3.1 — Join tabs + wizard polish (2026-07)
+
+- **Physical join tabs for multi-piece assemblies** — `splitTemplateAtCandidate` now generates a real glue-tab polygon extending outward from the join edge along the split line. The tab is added as a `Tab` (cut line), `FoldLine` (fold), and `Annotation` (label) to one assembly, while the matching assembly gets a receiving-edge instruction label
+- **Tab re-balancing** — `tryMultiPieceLayout` checks if Assembly A fits with the tab; if not, `moveJoinTabToAssembly` reassigns the tab to Assembly B and retries. If neither fits, the next split candidate is tried
+- **`moveJoinTabToAssembly`** — new helper in `layout/index.ts` that transfers a join tab (and its cut path / fold line / annotations) from one part to the other, recomputing both parts' bounds and swapping labels
+- **Validation moved into wizard** — the standalone bottom-of-page `ValidationPanel` is replaced by a collapsible Issues section inside the wizard card, between step content and nav buttons. Auto-expands when new issues appear. Shows "✓ No issues" or error/warning count
+- **Auto-advance fix** — shape/style/material auto-advance `useEffect`s now use `useRef` guards to only fire when the tracked value actually changes, not when the user navigates to the step via the stepper
+- **Button `:active` states** — `active:scale-[0.97] active:brightness-90` on `buttonVariants`; `.style-card:active`, `.wizard-step:active` scale transforms with smooth transition
+- **Preview SVG `max-height: 50vh`** — prevents tall templates from pushing the layout off-screen
+- **Duplicate export buttons removed** — only one set of PDF/SVG buttons in the wizard footer
+- All 169 tests pass (36 files)
+
+## v3.0 — Multi-piece layout + inline validation (2026-07)
+
+- **Multi-piece layout engine** — when a one-piece net exceeds the printable area, `layoutTemplate` now tries to split the template along a fold line into two assemblies. Each assembly fits within the printable area with join labels included (closes #1)
+- **`splitTemplateAtCandidate`** — new function in `layout/index.ts` that partitions a single-part `TemplateItem` into a two-part template using the existing `splitCandidates` (fold lines) with cross-product side detection
+- **`LayoutType`** — new field on `LayoutResult` (`'single-piece' | 'multi-piece' | 'overflow'`) with `assemblyCount`; the status bar and wizard now show distinct states
+- **Inline wizard validation** — `BoxWizard` now shows a status badge (Fits / Multi-piece / Blocked) between the stepper and step content, with a color-coded border (green/amber/red) and descriptive text
+- **Export button tooltips** — PDF/SVG/Add-to-Queue buttons show the first blocking error in their `title` attribute when disabled
+- **PDF assembly labels + join indicators** — multi-piece layouts render "Assembly A"/"Assembly B" labels and "<- Join ->" indicators on each page
+- **Small-box splitting confirmed** — a 4" × 2.5" × 1.4" glue-tab carton (101.6 × 63.5 × 35.56 mm, 330 mm strip net) on US Letter now produces a valid 2-assembly printable layout instead of reporting overflow
+- New test file: `tests/unit/layout/multi-piece.test.ts`
+- All 169 tests pass (36 files)
+
+## v2.1 — Polish & Export workflow (2026-07)
+
+- **A1** — `glueTabWidth` excluded from generic dimension validation; uses dedicated `tab-too-small` warning at 6mm threshold
+- **A2** — Overlap detection uses exclusive segment intersection with epsilon (`1e-10`); added `pointInPolygon` containment check — eliminates false positives from shared boundary edges
+- **A3** — Net generators respect `input.glueTabWidthMm` via `glueTabWidth()` helper with percentage fallback `max(W × 0.18, 10)`
+- **B1** — Glue-tab-carton defaults to strip-only topology; Front/Back never adjacent. Cross and T-layout still selectable for tuck-carton
+- **C1–C4** — Wizard overflow guards: 2-column grid (`1fr 20rem`), right panel scroll, panel-grid min-width reduced to 9rem, stepper `flex-wrap`
+- **D1–D3** — Queue moved from fixed 16rem left column to collapsible bottom drawer (toggled via header bar); batch PDF button in header
+- **E1–E4** — Wizard reduced from 7 to 6 steps (queue step removed); "Add to Queue" moved to preview step footer; PDF/SVG export buttons always visible in wizard footer
+- Updated README layout description; all 168 tests pass
+
 ## UI v2 — Tailwind + shadcn + 3-column layout (2026-07)
 
 - Installed Tailwind v4 + `@tailwindcss/vite`, set up CSS-based `@theme` block mapping existing design tokens
