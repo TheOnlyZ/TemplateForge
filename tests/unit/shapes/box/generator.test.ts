@@ -24,7 +24,7 @@ describe('generateBoxTemplate', () => {
     expect(result.template.metadata.style).toBe('open-tray')
   })
 
-  it('builds a glue tab carton with four main panels and a side seam', () => {
+  it('builds a glue tab carton with six structural panels and a side seam', () => {
     const result = generateBoxTemplate(
       {
         externalLengthMm: 140,
@@ -39,7 +39,7 @@ describe('generateBoxTemplate', () => {
       },
     )
 
-    expect(result.template.panels).toHaveLength(4)
+    expect(result.template.panels).toHaveLength(6)
     expect(result.template.tabs.some((tab) => tab.label === 'Glue Seam')).toBe(true)
     expect(result.template.tabs).toHaveLength(9)
   })
@@ -59,7 +59,7 @@ describe('generateBoxTemplate', () => {
       },
     )
 
-    expect(result.template.panels).toHaveLength(4)
+    expect(result.template.panels).toHaveLength(6)
     expect(result.template.tabs.some((tab) => tab.label === 'Top Tuck Flap')).toBe(true)
     expect(result.template.tabs.some((tab) => tab.label === 'Bottom Tuck Flap')).toBe(true)
   })

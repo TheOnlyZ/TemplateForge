@@ -36,61 +36,80 @@ The project is organised as a strict React + TypeScript + Vite application:
 
 ```
 src/
+├── components/           — shared UI primitives (Button, Card, Input, Select, Badge, Stepper)
+│   ├── Button.tsx        — primary, secondary, ghost variants
+│   ├── Card.tsx          — header/body/footer sections
+│   ├── Input.tsx         — labelled input with focus ring
+│   ├── Select.tsx        — labelled select with chevron
+│   ├── Badge.tsx         — coloured tags with optional dot indicator
+│   └── Stepper.tsx       — horizontal step indicator
 ├── domain/
-│   ├── geometry/        — reusable 2D primitives (points, bounds, paths)
-│   ├── paper/           — paper definitions, printable-area calculations
-│   ├── units/           — unit conversion, imperial/metric formatting
-│   ├── validation/      — input, geometry, and layout validation rules
-│   ├── templates/       — shape-agnostic template model
-│   ├── shapes/          — parametric shape generators
-│   │   ├── box/         — strip, cross, and T-layout net generators
+│   ├── geometry/         — reusable 2D primitives (points, bounds, paths)
+│   │   └── net.ts        — Face, GlueTab, Flap, Fold, Net interfaces
+│   ├── paper/            — paper definitions, printable-area calculations
+│   ├── units/            — unit conversion, imperial/metric formatting
+│   ├── validation/       — input, geometry, layout, and net validation rules
+│   │   └── net.ts        — validateNet (face count, dimensions, labels, overlap, fold graph)
+│   ├── templates/        — shape-agnostic template model
+│   ├── shapes/
+│   │   ├── box/
+│   │   │   ├── index.ts        — generateBoxTemplate, helpers
+│   │   │   ├── nets.ts         — net-type dispatch
+│   │   │   ├── net-geometry.ts — buildStripNet, buildCrossNet, buildTNetCarton
+│   │   │   └── net-converter.ts— Net → TemplateItem converter
 │   │   ├── cylinder/
 │   │   ├── cone/
 │   │   ├── polygonal-prism/
 │   │   ├── tube-sleeve/
 │   │   ├── drawer-telescoping/
 │   │   └── custom-parametric/
-│   ├── materials/       — material definitions and guidance
-│   └── layout/          — single-page placement, no tiling
-├── store/               — Zustand app state (draft, queue, preferences)
+│   ├── materials/        — material definitions and guidance
+│   └── layout/           — single-page placement, no tiling
+├── store/                — Zustand app state (draft, queue, preferences)
 ├── features/
-│   ├── workspace/       — main workspace page with preview + sidebar
-│   ├── wizard/          — step-by-step box/cylinder wizard
-│   ├── assembly/        — 3D assembly model and views
-│   ├── preview/         — SVG template preview component
-│   ├── export/          — download helpers
-│   └── project/         — serialisation / persistence
+│   ├── workspace/
+│   │   ├── WorkspacePage.tsx    — main page (orchestrator, ~235 lines)
+│   │   ├── Toolbar.tsx          — compact title + unit toggle + save/open
+│   │   ├── QueueSection.tsx     — queue items list with actions
+│   │   └── ValidationPanel.tsx  — validation messages with severity badges
+│   ├── wizard/           — step-by-step shape wizard
+│   │   └── box-wizard/
+│   │       └── BoxWizard.tsx    — 7-step wizard with Stepper, Input, Select
+│   ├── assembly/         — 3D assembly model and SVG views
+│   ├── preview/          — SVG template preview component
+│   ├── export/           — download helpers
+│   └── project/          — serialisation / persistence
 ├── renderers/
-│   ├── pdf/             — PDF document generation
-│   └── svg/             — SVG file export
-└── App.css              — design system tokens + component styles
+│   ├── pdf/              — PDF document generation (pdf-lib)
+│   └── svg/              — SVG export (preview + file)
+├── styles/
+│   └── layout.css        — app-shell (global layout)
+├── index.css             — design tokens (colours, spacing, type scale, radii, shadows)
+└── App.tsx               — imports global CSS + feature CSS
 ```
 
 ## Current Status
 
-The implementation is complete through all seven original roadmap phases plus a comprehensive revision pass:
+The implementation is complete through all seven original roadmap phases plus two major revision passes.
 
-### Layout Engine Redesign
-- Multi-net evaluation: strip → cross → T-layout, first fit wins
-- No tiling — oversized templates produce validation errors instead
-- PDF renderer cleaner, no registration marks or overlap regions
+### Net Geometry Model (Revision 1)
+- Layered `Net` / `Face` / `GlueTab` / `Flap` / `Fold` interfaces in `src/domain/geometry/net.ts`
+- Each net generator (`buildStripNet`, `buildCrossNet`, `buildTNetCarton`) produces a typed `Net` with all 6 faces structural — Front/Back = L×H, Left/Right = W×H, Top/Bottom = L×W
+- Glue tabs are separate auxiliary geometry with validated attachment edges; labels derive from geometry role
+- `validateNet` performs 8 checks: face count (tray=5, carton=6), dimensions, names, duplicates, glue-tab attachment, overlap detection, fold-graph connectivity
+- `netToTemplateItem` decouples net generation from rendering — SVG/PDF renderers consume flat `TemplateItem[]`
 
-### Shape Engine
-- Cylinder workflow fully integrated (shape-type in draft, wizard selector, preview branching, persistence)
-- Cylinder-specific validation bounds (`CYLINDER_MAX_DIAMETER_MM`, `CYLINDER_MIN_DIAMETER_MM`)
-
-### UI / UX Refinement
-- Cards collapsed into a compact info bar (draft name, shape, material, paper, printable area, limits, status)
-- Wizard steps flow horizontally with flex-wrap (no more grid stacking)
-- Larger preview area with balanced flat/3D split
-- Modular typography scale (`--text-xs` through `--text-2xl`)
-- Standardised border-radii, padding, and gap spacing
-- 3D assembly overflow fixed (hidden overflow + aspect-ratio)
-- Stale copy replaced with shape-agnostic descriptions
+### UI Overhaul (Revision 2)
+- **Design tokens refined** — solid `--bg` (#0b1119), `--surface-hover`, `--text-muted`, `--ring`, `--shadow-sm/md/lg`, `--transition` token; removed radial-gradient body background
+- **6 component primitives** — `Button`, `Card`, `Input`, `Select`, `Badge`, `Stepper` with CSS modules under `src/components/`
+- **Workspace decomposed** — `Toolbar`, `QueueSection`, `ValidationPanel` extracted from the monolithic 724-line `WorkspacePage.tsx` (now ~235 lines)
+- **CSS reorganised** — `App.css` deleted; styles split into `layout.css`, `BoxWizard.css`, `TemplatePreview.css`, `AssemblyView.css`; all CSS modules use scoped class names
+- **Wizard cleanup** — replaced numbered-step list with `<Stepper>`, raw inputs with `<Input>`/`<Select>`, shortened labels, removed verbose helper text
+- **Visual polish** — 150ms transitions on interactive elements, focus rings (`--ring` token), card hover lift, reduced border opacity (`--border` at 12% instead of 15%)
 
 ### Test Coverage
-- 110 unit tests across 32 test files
-- Tests for all shape generators, layout engine, validation, store, persistence, and PDF/SVG export
+- 153 unit tests across 34 test files
+- Tests for all shape generators, net generators, net validation, layout engine, component rendering (React Testing Library), store, persistence, and PDF/SVG export
 
 ## Roadmap
 

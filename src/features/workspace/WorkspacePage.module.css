@@ -1,0 +1,97 @@
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(18rem, 0.9fr);
+  gap: var(--space-xl);
+  padding: var(--space-xl);
+  flex: 1;
+}
+
+.main,
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+.infoBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+}
+
+.chipLabel {
+  color: var(--text-muted);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.chipValue {
+  color: var(--text-h);
+  font-weight: 600;
+}
+
+.chipOk .chipValue {
+  color: #34d399;
+}
+
+.chipWarn .chipValue {
+  color: #fbbf24;
+}
+
+.canvas {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-xl);
+  min-height: 28rem;
+}
+
+.previewGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.8fr);
+  gap: var(--space-lg);
+  align-items: stretch;
+}
+
+.previewStage {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.stageTitle {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text);
+}
+
+@media (max-width: 1080px) {
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .previewGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .workspace {
+    padding: var(--space-lg);
+  }
+}

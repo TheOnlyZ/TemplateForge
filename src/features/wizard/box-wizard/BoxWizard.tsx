@@ -1,3 +1,9 @@
+import { Badge } from '../../../components/Badge.tsx'
+import { Button } from '../../../components/Button.tsx'
+import { Card } from '../../../components/Card.tsx'
+import { Input } from '../../../components/Input.tsx'
+import { Select } from '../../../components/Select.tsx'
+import { Stepper } from '../../../components/Stepper.tsx'
 import { getMaterialDefinition, getMaterialOptions } from '../../../domain/materials/index.ts'
 import { getPaperSizeOptions } from '../../../domain/paper/index.ts'
 import type { TemplateItem } from '../../../domain/templates/index.ts'
@@ -19,38 +25,18 @@ const steps: { id: BoxWizardStepId; label: string }[] = [
   { id: 'material', label: 'Material' },
   { id: 'paper', label: 'Paper' },
   { id: 'preview', label: 'Preview' },
-  { id: 'queue', label: 'Add to Queue' },
+  { id: 'queue', label: 'Queue' },
 ]
 
-const shapeOptions: { id: ShapeType; title: string; description: string }[] = [
-  {
-    id: 'box',
-    title: 'Rectangular Box',
-    description: 'Standard rectangular box with four walls, base, and your choice of closure style.',
-  },
-  {
-    id: 'cylinder',
-    title: 'Straight Cylinder',
-    description: 'Round tube with a cylindrical body wrap and fitted top and bottom caps.',
-  },
+const shapeOptions: { id: ShapeType; title: string }[] = [
+  { id: 'box', title: 'Rectangular Box' },
+  { id: 'cylinder', title: 'Straight Cylinder' },
 ]
 
-const styleOptions: { id: BoxStyle; title: string; description: string }[] = [
-  {
-    id: 'glue-tab-carton',
-    title: 'Glue Tab Carton',
-    description: 'Strong permanent carton with a glued side seam and closure flaps.',
-  },
-  {
-    id: 'tuck-carton',
-    title: 'Tuck Carton',
-    description: 'Retail-style carton with tuck closures for reuse and repeated opening.',
-  },
-  {
-    id: 'open-tray',
-    title: 'Open Tray',
-    description: 'Open storage tray with folded walls and glued corner tabs.',
-  },
+const styleOptions: { id: BoxStyle; title: string }[] = [
+  { id: 'glue-tab-carton', title: 'Glue Tab Carton' },
+  { id: 'tuck-carton', title: 'Tuck Carton' },
+  { id: 'open-tray', title: 'Open Tray' },
 ]
 
 interface BoxWizardProps {
@@ -104,39 +90,25 @@ export function BoxWizard({
   }
 
   function formatAlternateLength(valueMm: number) {
-    return `Approx. ${formatLength(valueMm, alternateUnitSystem)}`
+    return `≈ ${formatLength(valueMm, alternateUnitSystem)}`
   }
 
-  return (
-    <article className="panel-card wizard-card">
-      <div className="wizard-header">
-        <div>
-          <h3>Shape Wizard</h3>
-          <p>Multi-shape workflow with a shared geometry and export pipeline.</p>
-        </div>
-        <span className="tag">
-          Step {stepIndex + 1} of {steps.length}
-        </span>
-      </div>
+  const headerNode = (
+    <>
+      <span>Shape Wizard</span>
+      <Badge>Step {stepIndex + 1} of {steps.length}</Badge>
+    </>
+  )
 
-      <ol className="wizard-steps" aria-label="Wizard steps">
-        {steps.map((step, index) => (
-          <li key={step.id}>
-            <button
-              type="button"
-              className={`wizard-step${step.id === draftStep ? ' active' : ''}`}
-              aria-current={step.id === draftStep ? 'step' : undefined}
-              onClick={() => setDraftStep(step.id)}
-            >
-              <span>{index + 1}</span>
-              {step.label}
-            </button>
-          </li>
-        ))}
-      </ol>
+  return (
+    <Card header={headerNode}>
+      <Stepper
+        steps={steps}
+        activeIndex={stepIndex}
+      />
 
       {draftStep === 'shape' && (
-        <div className="wizard-section style-grid">
+        <div className="style-grid">
           {shapeOptions.map((option) => (
             <button
               key={option.id}
@@ -145,7 +117,6 @@ export function BoxWizard({
               onClick={() => setDraftShapeType(option.id)}
             >
               <strong>{option.title}</strong>
-              <span>{option.description}</span>
             </button>
           ))}
         </div>
@@ -153,117 +124,72 @@ export function BoxWizard({
 
       {draftStep === 'dimensions' && (
         <div className="wizard-section">
-          <label className="panel-field">
-            <span>Queue name</span>
-            <input
-              className="panel-input"
-              type="text"
-              value={draft.name}
-              onChange={(event) => setDraftName(event.target.value)}
-            />
-          </label>
+          <Input
+            label="Queue name"
+            type="text"
+            value={draft.name}
+            onChange={(event) => setDraftName(event.target.value)}
+          />
 
           {draft.shapeType === 'cylinder' ? (
             <div className="panel-grid">
-              <label className="panel-field">
-                <span>Diameter ({getUnitSuffix(unitSystem)})</span>
-                <input
-                  className="panel-input"
-                  type="number"
-                  min={formatInputValue(12.7)}
-                  max={formatInputValue(914.4)}
-                  step={unitSystem === 'imperial' ? 0.01 : 1}
-                  value={formatInputValue(draft.cylinderInput.diameterMm)}
-                  onChange={(event) =>
-                    setDraftCylinderDimension('diameterMm', parseInputValue(event.target.value))
-                  }
-                />
-                <small>{formatAlternateLength(draft.cylinderInput.diameterMm)}</small>
-              </label>
-
-              <label className="panel-field">
-                <span>Height ({getUnitSuffix(unitSystem)})</span>
-                <input
-                  className="panel-input"
-                  type="number"
-                  min={formatInputValue(12.7)}
-                  max={formatInputValue(914.4)}
-                  step={unitSystem === 'imperial' ? 0.01 : 1}
-                  value={formatInputValue(draft.cylinderInput.heightMm)}
-                  onChange={(event) =>
-                    setDraftCylinderDimension('heightMm', parseInputValue(event.target.value))
-                  }
-                />
-                <small>{formatAlternateLength(draft.cylinderInput.heightMm)}</small>
-              </label>
+              <Input
+                label={`Diameter (${getUnitSuffix(unitSystem)})`}
+                type="number"
+                min={formatInputValue(12.7)}
+                max={formatInputValue(914.4)}
+                step={unitSystem === 'imperial' ? 0.01 : 1}
+                value={formatInputValue(draft.cylinderInput.diameterMm)}
+                onChange={(event) => setDraftCylinderDimension('diameterMm', parseInputValue(event.target.value))}
+              />
+              <Input
+                label={`Height (${getUnitSuffix(unitSystem)})`}
+                type="number"
+                min={formatInputValue(12.7)}
+                max={formatInputValue(914.4)}
+                step={unitSystem === 'imperial' ? 0.01 : 1}
+                value={formatInputValue(draft.cylinderInput.heightMm)}
+                onChange={(event) => setDraftCylinderDimension('heightMm', parseInputValue(event.target.value))}
+              />
             </div>
           ) : (
             <div className="panel-grid">
-              <label className="panel-field">
-                <span>External length ({getUnitSuffix(unitSystem)})</span>
-                <input
-                  className="panel-input"
-                  type="number"
-                  min={formatInputValue(12.7)}
-                  max={formatInputValue(914.4)}
-                  step={unitSystem === 'imperial' ? 0.01 : 1}
-                  value={formatInputValue(draft.boxInput.externalLengthMm)}
-                  onChange={(event) =>
-                    setDraftDimension('externalLengthMm', parseInputValue(event.target.value))
-                  }
-                />
-                <small>{formatAlternateLength(draft.boxInput.externalLengthMm)}</small>
-              </label>
-
-              <label className="panel-field">
-                <span>External width ({getUnitSuffix(unitSystem)})</span>
-                <input
-                  className="panel-input"
-                  type="number"
-                  min={formatInputValue(12.7)}
-                  max={formatInputValue(914.4)}
-                  step={unitSystem === 'imperial' ? 0.01 : 1}
-                  value={formatInputValue(draft.boxInput.externalWidthMm)}
-                  onChange={(event) =>
-                    setDraftDimension('externalWidthMm', parseInputValue(event.target.value))
-                  }
-                />
-                <small>{formatAlternateLength(draft.boxInput.externalWidthMm)}</small>
-              </label>
-
-              <label className="panel-field">
-                <span>External height ({getUnitSuffix(unitSystem)})</span>
-                <input
-                  className="panel-input"
-                  type="number"
-                  min={formatInputValue(12.7)}
-                  max={formatInputValue(914.4)}
-                  step={unitSystem === 'imperial' ? 0.01 : 1}
-                  value={formatInputValue(draft.boxInput.externalHeightMm)}
-                  onChange={(event) =>
-                    setDraftDimension('externalHeightMm', parseInputValue(event.target.value))
-                  }
-                />
-                <small>{formatAlternateLength(draft.boxInput.externalHeightMm)}</small>
-              </label>
-
-              <label className="panel-field">
-                <span>Glue tab / seam width ({getUnitSuffix(unitSystem)})</span>
-                <input
-                  className="panel-input"
-                  type="number"
-                  min={formatInputValue(6)}
-                  max={formatInputValue(40)}
-                  step={unitSystem === 'imperial' ? 0.01 : 1}
-                  value={formatInputValue(draft.boxInput.glueTabWidthMm)}
-                  onChange={(event) =>
-                    setDraftDimension('glueTabWidthMm', parseInputValue(event.target.value))
-                  }
-                />
-                <small>
-                  Recommended: {formatLength(activeMaterial.recommendedGlueTabWidthMm, unitSystem)}
-                </small>
-              </label>
+              <Input
+                label={`Length (${getUnitSuffix(unitSystem)})`}
+                type="number"
+                min={formatInputValue(12.7)}
+                max={formatInputValue(914.4)}
+                step={unitSystem === 'imperial' ? 0.01 : 1}
+                value={formatInputValue(draft.boxInput.externalLengthMm)}
+                onChange={(event) => setDraftDimension('externalLengthMm', parseInputValue(event.target.value))}
+              />
+              <Input
+                label={`Width (${getUnitSuffix(unitSystem)})`}
+                type="number"
+                min={formatInputValue(12.7)}
+                max={formatInputValue(914.4)}
+                step={unitSystem === 'imperial' ? 0.01 : 1}
+                value={formatInputValue(draft.boxInput.externalWidthMm)}
+                onChange={(event) => setDraftDimension('externalWidthMm', parseInputValue(event.target.value))}
+              />
+              <Input
+                label={`Height (${getUnitSuffix(unitSystem)})`}
+                type="number"
+                min={formatInputValue(12.7)}
+                max={formatInputValue(914.4)}
+                step={unitSystem === 'imperial' ? 0.01 : 1}
+                value={formatInputValue(draft.boxInput.externalHeightMm)}
+                onChange={(event) => setDraftDimension('externalHeightMm', parseInputValue(event.target.value))}
+              />
+              <Input
+                label={`Glue tab (${getUnitSuffix(unitSystem)})`}
+                type="number"
+                min={formatInputValue(6)}
+                max={formatInputValue(40)}
+                step={unitSystem === 'imperial' ? 0.01 : 1}
+                value={formatInputValue(draft.boxInput.glueTabWidthMm)}
+                onChange={(event) => setDraftDimension('glueTabWidthMm', parseInputValue(event.target.value))}
+              />
             </div>
           )}
         </div>
@@ -272,7 +198,7 @@ export function BoxWizard({
       {draftStep === 'style' && (
         <div className="wizard-section">
           {draft.shapeType === 'cylinder' ? (
-            <p>Cylinder style is fixed — the body wrap uses a straight cylinder profile with two fitted caps.</p>
+            <p className="toolbar-note">Cylinder style is fixed — straight body wrap with two fitted caps.</p>
           ) : (
             <div className="style-grid">
               {styleOptions.map((style) => (
@@ -283,7 +209,6 @@ export function BoxWizard({
                   onClick={() => setDraftStyle(style.id)}
                 >
                   <strong>{style.title}</strong>
-                  <span>{style.description}</span>
                 </button>
               ))}
             </div>
@@ -301,8 +226,7 @@ export function BoxWizard({
               onClick={() => setDraftMaterialId(material.id)}
             >
               <strong>{material.label}</strong>
-              <span>{material.description}</span>
-              <small>{material.assemblyNote}</small>
+              <small>{material.description}</small>
             </button>
           ))}
         </div>
@@ -311,38 +235,28 @@ export function BoxWizard({
       {draftStep === 'paper' && (
         <div className="wizard-section">
           <div className="panel-grid">
-            <label className="panel-field">
-              <span>Paper size</span>
-              <select
-                className="panel-select"
-                value={draft.paperSizeId}
-                onChange={(event) => setDraftPaperSizeId(event.target.value as typeof draft.paperSizeId)}
-              >
-                {getPaperSizeOptions().map((paper) => (
-                  <option key={paper.id} value={paper.id}>
-                    {paper.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <Select
+              label="Paper size"
+              value={draft.paperSizeId}
+              onChange={(event) => setDraftPaperSizeId(event.target.value as typeof draft.paperSizeId)}
+            >
+              {getPaperSizeOptions().map((paper) => (
+                <option key={paper.id} value={paper.id}>
+                  {paper.label}
+                </option>
+              ))}
+            </Select>
 
-            <label className="panel-field">
-              <span>Orientation strategy</span>
-              <select
-                className="panel-select"
-                value={draft.orientation}
-                onChange={(event) => setDraftOrientation(event.target.value as typeof draft.orientation)}
-              >
-                <option value="auto">Auto (recommended)</option>
-                <option value="portrait">Portrait</option>
-                <option value="landscape">Landscape</option>
-              </select>
-            </label>
+            <Select
+              label="Orientation"
+              value={draft.orientation}
+              onChange={(event) => setDraftOrientation(event.target.value as typeof draft.orientation)}
+            >
+              <option value="auto">Auto</option>
+              <option value="portrait">Portrait</option>
+              <option value="landscape">Landscape</option>
+            </Select>
           </div>
-
-          <p className="toolbar-note">
-            Supports US Letter, US Legal, A4, and A3 using the same calibrated PDF export path.
-          </p>
 
           <div className="margin-grid">
             {([
@@ -351,44 +265,24 @@ export function BoxWizard({
               ['bottom', 'Bottom'],
               ['left', 'Left'],
             ] as const).map(([side, label]) => (
-              <label key={side} className="panel-field">
-                <span>
-                  {label} margin ({getUnitSuffix(unitSystem)})
-                </span>
-                <input
-                  className="panel-input"
-                  type="number"
-                  min={formatInputValue(3)}
-                  max={formatInputValue(25.4)}
-                  step={unitSystem === 'imperial' ? 0.01 : 0.1}
-                  value={formatInputValue(draft.margins[side])}
-                  onChange={(event) => setDraftMargin(side, parseInputValue(event.target.value))}
-                />
-                <small>{formatAlternateLength(draft.margins[side])}</small>
-              </label>
+              <Input
+                key={side}
+                label={`${label} margin (${getUnitSuffix(unitSystem)})`}
+                type="number"
+                min={formatInputValue(3)}
+                max={formatInputValue(25.4)}
+                step={unitSystem === 'imperial' ? 0.01 : 0.1}
+                value={formatInputValue(draft.margins[side])}
+                onChange={(event) => setDraftMargin(side, parseInputValue(event.target.value))}
+              />
             ))}
           </div>
-
-          <p className="toolbar-note">
-            Margins below 6.35 mm can fit more geometry, but some printers may clip calibration and tiling guides near the sheet edge.
-          </p>
         </div>
       )}
 
       {draftStep === 'preview' && (
         <div className="wizard-section">
           <div className="summary-grid">
-            {draft.shapeType === 'cylinder' ? (
-              <div className="summary-item">
-                <span className="meta-label">Shape</span>
-                <strong>Cylinder</strong>
-              </div>
-            ) : (
-              <div className="summary-item">
-                <span className="meta-label">Style</span>
-                <strong>{styleOptions.find((style) => style.id === draft.boxInput.style)?.title}</strong>
-              </div>
-            )}
             <div className="summary-item">
               <span className="meta-label">Material</span>
               <strong>{activeMaterial.label}</strong>
@@ -398,99 +292,54 @@ export function BoxWizard({
               <strong>{previewTemplate.panels.length}</strong>
             </div>
             <div className="summary-item">
-              <span className="meta-label">Flaps / tabs</span>
+              <span className="meta-label">Tabs</span>
               <strong>{previewTemplate.tabs.length}</strong>
             </div>
           </div>
 
           <div className="wizard-actions-inline">
             <div className="toolbar-group">
-              <button
-                type="button"
-                className="toolbar-button"
-                onClick={onExportPreviewPdf}
-                disabled={!canExportPreviewPdf}
-              >
-                Export Preview PDF
-              </button>
-              <button
-                type="button"
-                className="toolbar-button"
-                onClick={onExportPreviewSvg}
-                disabled={!canExportPreviewSvg}
-              >
-                Export Preview SVG
-              </button>
+              <Button onClick={onExportPreviewPdf} disabled={!canExportPreviewPdf}>
+                PDF
+              </Button>
+              <Button onClick={onExportPreviewSvg} disabled={!canExportPreviewSvg}>
+                SVG
+              </Button>
             </div>
-            <p className="toolbar-note">
-              {!canExportPreviewSvg
-                ? 'Resolve blocking validation before exporting.'
-                : canExportPreviewPdf
-                  ? 'SVG and PDF export are ready for this preview.'
-                  : 'SVG export is ready. PDF export still has blocking layout constraints.'}
-            </p>
           </div>
         </div>
       )}
 
       {draftStep === 'queue' && (
         <div className="wizard-section">
-          <p>
+          <p className="toolbar-note">
             {isEditingQueueItem
-              ? 'Update the selected queued item using the current wizard parameters, material choice, and paper settings.'
-              : 'Save the current parametric item to the project queue. The queue stores the shape parameters, material choice, and paper settings for later project exports.'}
+              ? 'Update the queued item with current wizard parameters.'
+              : 'Save the current parameters to the project queue for export.'}
           </p>
           <div className="wizard-actions-inline">
             <div className="toolbar-group">
-              <button
-                type="button"
-                className="toolbar-button"
-                onClick={() => addDraftToQueue()}
-                disabled={!canExportPreviewPdf}
-              >
+              <Button onClick={() => addDraftToQueue()} disabled={!canExportPreviewPdf}>
                 {isEditingQueueItem ? 'Save Changes' : 'Add to Queue'}
-              </button>
+              </Button>
               {isEditingQueueItem && (
-                <button
-                  type="button"
-                  className="toolbar-button toolbar-button--ghost"
-                  onClick={() => cancelEditingQueueItem()}
-                >
-                  Cancel Edit
-                </button>
+                <Button variant="ghost" onClick={() => cancelEditingQueueItem()}>
+                  Cancel
+                </Button>
               )}
             </div>
-            <p className="toolbar-note">
-              {canExportPreviewPdf
-                ? isEditingQueueItem
-                  ? 'This queued item is ready to be updated.'
-                  : 'This item is ready to commit to the queue.'
-                : isEditingQueueItem
-                  ? 'Queue edits are blocked until the preview is export-safe.'
-                  : 'Queue add is blocked until the preview is export-safe.'}
-            </p>
           </div>
         </div>
       )}
 
       <div className="wizard-footer">
-        <button
-          type="button"
-          className="toolbar-button"
-          onClick={() => previousDraftStep()}
-          disabled={stepIndex === 0}
-        >
+        <Button onClick={() => previousDraftStep()} disabled={stepIndex === 0}>
           Back
-        </button>
-        <button
-          type="button"
-          className="toolbar-button"
-          onClick={() => nextDraftStep()}
-          disabled={stepIndex === steps.length - 1}
-        >
+        </Button>
+        <Button onClick={() => nextDraftStep()} disabled={stepIndex === steps.length - 1}>
           Next
-        </button>
+        </Button>
       </div>
-    </article>
+    </Card>
   )
 }

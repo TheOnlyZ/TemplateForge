@@ -40,7 +40,7 @@ describe('BoxWizard', () => {
       />,
     )
 
-    const lengthInput = screen.getByLabelText(/External length \(in\)/)
+    const lengthInput = screen.getByLabelText(/Length \(in\)/)
 
     fireEvent.change(lengthInput, { target: { value: '5' } })
 

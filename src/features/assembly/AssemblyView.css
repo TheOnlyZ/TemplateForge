@@ -1,0 +1,262 @@
+.assembly-view {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  overflow: hidden;
+}
+
+.assembly-view__scene {
+  width: 100%;
+  min-height: 22rem;
+  aspect-ratio: 420 / 320;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.05), transparent 28%),
+    linear-gradient(180deg, rgba(20, 26, 35, 0.98), rgba(12, 16, 23, 0.96));
+}
+
+.assembly-view__shadow {
+  fill: rgba(7, 10, 17, 0.4);
+}
+
+.assembly-view__face {
+  stroke: rgba(244, 247, 251, 0.18);
+  stroke-width: 1;
+  stroke-linejoin: round;
+  transition:
+    fill var(--transition),
+    stroke var(--transition),
+    stroke-width var(--transition),
+    filter var(--transition);
+}
+
+.assembly-view__face--front { fill: rgba(124, 132, 146, 0.85); }
+.assembly-view__face--back { fill: rgba(90, 98, 110, 0.75); }
+.assembly-view__face--left { fill: rgba(98, 106, 118, 0.8); }
+.assembly-view__face--side { fill: rgba(92, 101, 114, 0.84); }
+.assembly-view__face--top { fill: rgba(146, 154, 166, 0.9); }
+.assembly-view__face--rim { fill: rgba(138, 146, 158, 0.88); }
+.assembly-view__face--base { fill: rgba(76, 82, 94, 0.88); }
+
+.assembly-view__opening {
+  fill: rgba(8, 13, 22, 0.85);
+  stroke: rgba(244, 247, 251, 0.1);
+  stroke-width: 1;
+  transition: stroke var(--transition), fill var(--transition);
+}
+
+.assembly-view__rim-line,
+.assembly-view__closure-line {
+  fill: none;
+  stroke: rgba(244, 247, 251, 0.3);
+  stroke-width: 1;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  transition: stroke var(--transition), stroke-width var(--transition);
+}
+
+.assembly-view__closure-line {
+  stroke-dasharray: 6 4;
+}
+
+.assembly-view__face-label {
+  fill: var(--text-h);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  transition: fill var(--transition);
+}
+
+.assembly-view__face-label--muted {
+  fill: rgba(244, 247, 251, 0.7);
+}
+
+.assembly-view__face-group {
+  cursor: pointer;
+}
+
+.assembly-view__face-group:focus-visible {
+  outline: none;
+}
+
+.assembly-view__face.is-highlighted {
+  stroke: rgba(207, 224, 255, 0.88);
+  stroke-width: 1.7;
+  filter: drop-shadow(0 0 8px rgba(122, 162, 255, 0.15));
+  fill: rgba(91, 134, 223, 0.88);
+}
+
+.assembly-view__face.is-transparent {
+  opacity: 0.55;
+}
+
+.assembly-view__opening.is-highlighted {
+  stroke: rgba(207, 224, 255, 0.48);
+  fill: rgba(15, 24, 38, 0.9);
+}
+
+.assembly-view__rim-line.is-highlighted,
+.assembly-view__closure-line.is-highlighted {
+  stroke: rgba(207, 224, 255, 0.72);
+  stroke-width: 1.35;
+}
+
+.assembly-view__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.assembly-view__mode-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.assembly-view__summary-card {
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.assembly-view__summary-card p {
+  margin: 0.3rem 0 0;
+  color: var(--text-muted);
+}
+
+.assembly-view__sequence-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-md);
+}
+
+.assembly-view__sequence-header p {
+  margin: 0.3rem 0 0;
+  color: var(--text-muted);
+}
+
+.assembly-view__controls {
+  width: auto;
+}
+
+.assembly-view__cue-line {
+  fill: none;
+  stroke: rgba(167, 187, 214, 0.7);
+  stroke-width: 1.1;
+  stroke-dasharray: 4 3;
+}
+
+.assembly-view__cue-arrow {
+  fill: rgba(167, 187, 214, 0.8);
+}
+
+.assembly-view__cue-badge rect {
+  fill: rgba(35, 46, 64, 0.92);
+  stroke: rgba(122, 162, 255, 0.4);
+  stroke-width: 1;
+}
+
+.assembly-view__cue-badge text {
+  fill: var(--text-h);
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-anchor: middle;
+}
+
+.assembly-view__steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.assembly-view__mapping {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.assembly-view__mapping-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.assembly-view__mapping-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.assembly-view__mapping-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-elevated);
+}
+
+.assembly-view__mapping-item p {
+  margin: 0.25rem 0 0;
+  color: var(--text-muted);
+}
+
+.assembly-view__mapping-pages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.assembly-view__step {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-elevated);
+  color: var(--text-h);
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition);
+}
+
+.assembly-view__step:hover {
+  background: var(--surface-hover);
+}
+
+.assembly-view__step span {
+  display: inline-grid;
+  place-items: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 999px;
+  background: rgba(153, 167, 187, 0.12);
+  font-size: var(--text-xs);
+  flex-shrink: 0;
+}
+
+.assembly-view__step strong {
+  display: block;
+  margin-bottom: 0.15rem;
+}
+
+.assembly-view__step small {
+  color: var(--text-muted);
+}
+
+.assembly-view__step.active {
+  background: var(--accent-bg);
+  border-color: var(--accent-border);
+}
+
+.assembly-view__step.active small {
+  color: rgba(244, 247, 251, 0.75);
+}

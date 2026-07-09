@@ -16,6 +16,9 @@ import {
   type ShapeGenerationContext,
   type ShapeGenerationResult,
 } from '../shared/index.ts'
+import type { Face } from '../../geometry/net.ts'
+import { buildStripNet } from './net-geometry.ts'
+import { netToTemplateItem } from './net-converter.ts'
 
 export type BoxStyle = 'glue-tab-carton' | 'tuck-carton' | 'open-tray'
 
@@ -198,6 +201,16 @@ export function buildTemplateItem(
         queueStatus: 'draft',
       },
     },
+  }
+}
+
+function faceToPanel(face: Face, partId: string): Panel {
+  return {
+    id: partId + ':' + face.id,
+    partId,
+    name: face.name,
+    outline: [...face.polygon],
+    bounds: getBounds(face.polygon),
   }
 }
 
@@ -405,209 +418,8 @@ function buildCartonTemplate(
   input: BoxInput,
   context: ShapeGenerationContext,
 ): ShapeGenerationResult {
-  const { externalHeightMm, externalLengthMm, externalWidthMm, glueTabWidthMm, style } = input
-  const partId = createEntityId(context, 'part', 'main')
-  const topMajorDepth = externalWidthMm * 0.82
-  const stripY = topMajorDepth
-  const stripBottom = stripY + externalHeightMm
-  const widths = [externalLengthMm, externalWidthMm, externalLengthMm, externalWidthMm]
-  const panelNames = ['Front Panel', 'Right Panel', 'Back Panel', 'Left Panel']
-  const panelIds = ['front', 'right', 'back', 'left']
-
-  let cursorX = 0
-  const panels: Panel[] = widths.map((width, index) => {
-    const outline = createRectangle(cursorX, stripY, width, externalHeightMm)
-    const panel: Panel = {
-      id: createEntityId(context, 'panel', panelIds[index]!),
-      partId,
-      name: panelNames[index]!,
-      outline,
-      bounds: getBounds(outline),
-    }
-    cursorX += width
-    return panel
-  })
-
-  const frontPanel = panels[0]!
-  const rightPanel = panels[1]!
-  const backPanel = panels[2]!
-  const leftPanel = panels[3]!
-  const frontMajorDepth = externalWidthMm * 0.85
-  const backMajorDepth = externalWidthMm * 0.7
-  const sideFlapDepth = Math.max(externalWidthMm * 0.45, 14)
-  const bottomFlapDepth = externalWidthMm * 0.78
-  const bottomSideDepth = Math.max(externalWidthMm * 0.42, 12)
-
-  const flapSpecs: EdgeTabSpec[] = [
-    {
-      id: 'glue-seam',
-      label: 'Glue Seam',
-      outline: createVerticalGlueTab(leftPanel.bounds.maxX, stripY, stripBottom, 'right', glueTabWidthMm),
-    },
-  ]
-
-  if (style === 'glue-tab-carton') {
-    flapSpecs.push(
-      {
-        id: 'top-front-flap',
-        label: 'Top Front Flap',
-        outline: createHorizontalFlap(frontPanel.bounds.minX, frontPanel.bounds.maxX, stripY, frontMajorDepth, 'up'),
-      },
-      {
-        id: 'top-right-flap',
-        label: 'Top Right Dust Flap',
-        outline: createHorizontalFlap(rightPanel.bounds.minX, rightPanel.bounds.maxX, stripY, sideFlapDepth, 'up', 0.15),
-      },
-      {
-        id: 'top-back-flap',
-        label: 'Top Back Flap',
-        outline: createHorizontalFlap(backPanel.bounds.minX, backPanel.bounds.maxX, stripY, frontMajorDepth, 'up'),
-      },
-      {
-        id: 'top-left-flap',
-        label: 'Top Left Dust Flap',
-        outline: createHorizontalFlap(leftPanel.bounds.minX, leftPanel.bounds.maxX, stripY, sideFlapDepth, 'up', 0.15),
-      },
-      {
-        id: 'bottom-front-flap',
-        label: 'Bottom Front Flap',
-        outline: createHorizontalFlap(frontPanel.bounds.minX, frontPanel.bounds.maxX, stripBottom, bottomFlapDepth, 'down'),
-      },
-      {
-        id: 'bottom-right-flap',
-        label: 'Bottom Right Dust Flap',
-        outline: createHorizontalFlap(rightPanel.bounds.minX, rightPanel.bounds.maxX, stripBottom, bottomSideDepth, 'down', 0.15),
-      },
-      {
-        id: 'bottom-back-flap',
-        label: 'Bottom Back Flap',
-        outline: createHorizontalFlap(backPanel.bounds.minX, backPanel.bounds.maxX, stripBottom, bottomFlapDepth, 'down'),
-      },
-      {
-        id: 'bottom-left-flap',
-        label: 'Bottom Left Dust Flap',
-        outline: createHorizontalFlap(leftPanel.bounds.minX, leftPanel.bounds.maxX, stripBottom, bottomSideDepth, 'down', 0.15),
-      },
-    )
-  } else {
-    flapSpecs.push(
-      {
-        id: 'top-front-tuck',
-        label: 'Top Tuck Flap',
-        outline: createTuckFlap(frontPanel.bounds.minX, frontPanel.bounds.maxX, stripY, frontMajorDepth, 'up'),
-      },
-      {
-        id: 'top-right-dust',
-        label: 'Top Right Dust Flap',
-        outline: createHorizontalFlap(rightPanel.bounds.minX, rightPanel.bounds.maxX, stripY, sideFlapDepth, 'up', 0.18),
-      },
-      {
-        id: 'top-back-lock',
-        label: 'Top Back Flap',
-        outline: createHorizontalFlap(backPanel.bounds.minX, backPanel.bounds.maxX, stripY, backMajorDepth, 'up', 0.06),
-      },
-      {
-        id: 'top-left-dust',
-        label: 'Top Left Dust Flap',
-        outline: createHorizontalFlap(leftPanel.bounds.minX, leftPanel.bounds.maxX, stripY, sideFlapDepth, 'up', 0.18),
-      },
-      {
-        id: 'bottom-front-flap',
-        label: 'Bottom Front Flap',
-        outline: createHorizontalFlap(frontPanel.bounds.minX, frontPanel.bounds.maxX, stripBottom, backMajorDepth, 'down', 0.06),
-      },
-      {
-        id: 'bottom-right-dust',
-        label: 'Bottom Right Dust Flap',
-        outline: createHorizontalFlap(rightPanel.bounds.minX, rightPanel.bounds.maxX, stripBottom, bottomSideDepth, 'down', 0.18),
-      },
-      {
-        id: 'bottom-back-tuck',
-        label: 'Bottom Tuck Flap',
-        outline: createTuckFlap(backPanel.bounds.minX, backPanel.bounds.maxX, stripBottom, frontMajorDepth, 'down'),
-      },
-      {
-        id: 'bottom-left-dust',
-        label: 'Bottom Left Dust Flap',
-        outline: createHorizontalFlap(leftPanel.bounds.minX, leftPanel.bounds.maxX, stripBottom, bottomSideDepth, 'down', 0.18),
-      },
-    )
-  }
-
-  const tabs = flapSpecs.map((spec) => createTab(context, partId, spec.id, spec.label, spec.outline))
-  const cutPaths: CutPath[] = [
-    {
-      id: createEntityId(context, 'cut', 'left-edge'),
-      partId,
-      path: [
-        { x: frontPanel.bounds.minX, y: stripY },
-        { x: frontPanel.bounds.minX, y: stripBottom },
-      ],
-      style: 'solid',
-      closed: false,
-    },
-    ...tabs.map((tab) => ({
-      id: createEntityId(context, 'cut', tab.id),
-      partId,
-      path: tab.outline,
-      style: 'solid' as const,
-      closed: false,
-    })),
-  ]
-  const foldLines: FoldLine[] = [
-    {
-      id: createEntityId(context, 'fold', 'front-right'),
-      partId,
-      start: { x: frontPanel.bounds.maxX, y: stripY },
-      end: { x: frontPanel.bounds.maxX, y: stripBottom },
-      foldType: 'score',
-      style: 'dashed',
-    },
-    {
-      id: createEntityId(context, 'fold', 'right-back'),
-      partId,
-      start: { x: rightPanel.bounds.maxX, y: stripY },
-      end: { x: rightPanel.bounds.maxX, y: stripBottom },
-      foldType: 'score',
-      style: 'dashed',
-    },
-    {
-      id: createEntityId(context, 'fold', 'back-left'),
-      partId,
-      start: { x: backPanel.bounds.maxX, y: stripY },
-      end: { x: backPanel.bounds.maxX, y: stripBottom },
-      foldType: 'score',
-      style: 'dashed',
-    },
-    {
-      id: createEntityId(context, 'fold', 'glue-seam'),
-      partId,
-      start: { x: leftPanel.bounds.maxX, y: stripY },
-      end: { x: leftPanel.bounds.maxX, y: stripBottom },
-      foldType: 'score',
-      style: 'dashed',
-    },
-    ...tabs.map((tab) => ({
-      id: createEntityId(context, 'fold', `tab-${tab.id}`),
-      partId,
-      start: tab.attachStart,
-      end: tab.attachEnd,
-      foldType: 'score' as const,
-      style: 'dashed' as const,
-    })),
-  ]
-
-  return buildTemplateItem(
-    input,
-    context,
-    panels,
-    cutPaths,
-    foldLines,
-    tabs,
-    style === 'glue-tab-carton'
-      ? 'Glue the side seam first, then close the top and bottom flaps in sequence for a permanent carton build.'
-      : 'Glue the side seam first, then use the tuck flaps and dust flaps to close the carton without additional adhesive.',
-  )
+  const net = buildStripNet(input)
+  return netToTemplateItem(net, input, context)
 }
 
 export function generateBoxTemplate(

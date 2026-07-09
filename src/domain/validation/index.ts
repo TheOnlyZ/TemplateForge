@@ -12,6 +12,14 @@ export type ValidationCode =
   | 'page-count-limit'
   | 'printable-area-overflow'
   | 'impossible-layout'
+  | 'net-face-count'
+  | 'net-face-dimension'
+  | 'net-face-name'
+  | 'net-face-duplicate'
+  | 'net-glue-tab-attachment'
+  | 'net-glue-tab-overlap'
+  | 'net-fold-graph'
+  | 'net-fold-connection'
 
 export interface ValidationMessage {
   code: ValidationCode
@@ -240,3 +248,5 @@ export function validateLayoutResult(options: LayoutValidationOptions): Validati
 
   return buildValidationResult(messages)
 }
+
+export { validateNet } from './net.ts'

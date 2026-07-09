@@ -1,0 +1,49 @@
+.stepper {
+  display: flex;
+  gap: 0.25rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  border: 1px solid transparent;
+  transition: background var(--transition), border-color var(--transition), color var(--transition);
+  cursor: default;
+}
+
+.step.active {
+  background: var(--accent-bg);
+  border-color: var(--accent-border);
+  color: var(--text-h);
+}
+
+.step.completed {
+  color: var(--text);
+}
+
+.num {
+  display: inline-grid;
+  place-items: center;
+  width: 1.2rem;
+  height: 1.2rem;
+  border-radius: 999px;
+  background: rgba(153, 167, 187, 0.12);
+  font-size: 0.65rem;
+}
+
+.step.active .num {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.step.completed .num {
+  background: rgba(153, 167, 187, 0.2);
+}

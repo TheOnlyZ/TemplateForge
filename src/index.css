@@ -1,16 +1,21 @@
 :root {
-  --bg: #0f1722;
-  --surface: #131d2b;
-  --surface-elevated: #192638;
-  --text: #d7deea;
-  --text-h: #f4f7fb;
-  --muted-text: #99a7bb;
-  --border: rgba(147, 168, 193, 0.2);
+  --bg: #0b1119;
+  --surface: #111a24;
+  --surface-elevated: #182433;
+  --surface-hover: #1e2d3d;
+  --text: #cdd6e0;
+  --text-h: #edf2f7;
+  --text-muted: #8896a8;
+  --border: rgba(147, 168, 193, 0.1);
   --accent: #7aa2ff;
-  --accent-bg: rgba(122, 162, 255, 0.16);
-  --accent-border: rgba(122, 162, 255, 0.4);
-  --warning: #f0b45d;
-  --shadow: rgba(4, 10, 22, 0.38) 0 18px 36px -24px;
+  --accent-bg: rgba(122, 162, 255, 0.12);
+  --accent-border: rgba(122, 162, 255, 0.35);
+  --warning: #e8a84c;
+  --ring: rgba(122, 162, 255, 0.5);
+  --shadow-sm: rgba(4, 10, 22, 0.3) 0 1px 3px;
+  --shadow-md: rgba(4, 10, 22, 0.35) 0 4px 12px -4px;
+  --shadow-lg: rgba(4, 10, 22, 0.4) 0 8px 24px -8px;
+  --transition: 150ms ease;
   --sans: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --mono: 'SFMono-Regular', ui-monospace, monospace;
   --text-xs: 0.75rem;
@@ -49,9 +54,7 @@ body,
 
 body {
   margin: 0;
-  background:
-    radial-gradient(circle at top left, rgba(122, 162, 255, 0.16), transparent 20%),
-    linear-gradient(180deg, #101726 0%, #0d141e 100%);
+  background: var(--bg);
 }
 
 button,
@@ -81,5 +84,5 @@ code {
   font-size: 0.875em;
   padding: 0.1rem 0.35rem;
   border-radius: var(--radius-sm);
-  background: rgba(153, 167, 187, 0.12);
+  background: rgba(153, 167, 187, 0.1);
 }
