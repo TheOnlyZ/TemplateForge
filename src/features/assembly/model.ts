@@ -102,11 +102,11 @@ function getTargetFoldIds(template: TemplateItem, fragments: string[]) {
 function buildOpenTrayModel(template: TemplateItem): AssemblyModel {
   const glueTabIds = template.tabs.map((tab) => tab.id)
   const faces: AssemblyFace[] = [
-    { id: 'front', label: 'Front', targetIds: getTargetPanelIds(template, ['Front Wall']) },
-    { id: 'back', label: 'Back', targetIds: getTargetPanelIds(template, ['Back Wall']) },
-    { id: 'left', label: 'Left', targetIds: getTargetPanelIds(template, ['Left Wall']) },
-    { id: 'right', label: 'Right', targetIds: getTargetPanelIds(template, ['Right Wall']) },
-    { id: 'base', label: 'Base', targetIds: getTargetPanelIds(template, ['Base']) },
+    { id: 'front', label: 'Front', targetIds: getTargetPanelIds(template, ['Front Panel']) },
+    { id: 'back', label: 'Back', targetIds: getTargetPanelIds(template, ['Back Panel']) },
+    { id: 'left', label: 'Left', targetIds: getTargetPanelIds(template, ['Left Panel']) },
+    { id: 'right', label: 'Right', targetIds: getTargetPanelIds(template, ['Right Panel']) },
+    { id: 'base', label: 'Base', targetIds: getTargetPanelIds(template, ['Bottom Panel']) },
   ]
   const steps: AssemblyStep[] = [
     {
@@ -116,8 +116,8 @@ function buildOpenTrayModel(template: TemplateItem): AssemblyModel {
       focusFaceId: 'front',
       cueKind: 'fold-up',
       cueLabel: 'Fold Up',
-      targetIds: getTargetPanelIds(template, ['Front Wall']),
-      foldIds: getTargetFoldIds(template, ['front-wall']),
+      targetIds: getTargetPanelIds(template, ['Front Panel']),
+      foldIds: getTargetFoldIds(template, ['bottom-front']),
       glueTabIds: [],
     },
     {
@@ -127,8 +127,8 @@ function buildOpenTrayModel(template: TemplateItem): AssemblyModel {
       focusFaceId: 'back',
       cueKind: 'fold-up',
       cueLabel: 'Fold Up',
-      targetIds: getTargetPanelIds(template, ['Back Wall']),
-      foldIds: getTargetFoldIds(template, ['back-wall']),
+      targetIds: getTargetPanelIds(template, ['Back Panel']),
+      foldIds: getTargetFoldIds(template, ['bottom-back']),
       glueTabIds: [],
     },
     {
@@ -138,8 +138,8 @@ function buildOpenTrayModel(template: TemplateItem): AssemblyModel {
       focusFaceId: 'left',
       cueKind: 'fold-in',
       cueLabel: 'Fold In',
-      targetIds: getTargetPanelIds(template, ['Left Wall']),
-      foldIds: getTargetFoldIds(template, ['left-wall']),
+      targetIds: getTargetPanelIds(template, ['Left Panel']),
+      foldIds: getTargetFoldIds(template, ['bottom-left']),
       glueTabIds: [],
     },
     {
@@ -149,8 +149,8 @@ function buildOpenTrayModel(template: TemplateItem): AssemblyModel {
       focusFaceId: 'right',
       cueKind: 'fold-in',
       cueLabel: 'Fold In',
-      targetIds: getTargetPanelIds(template, ['Right Wall']),
-      foldIds: getTargetFoldIds(template, ['right-wall']),
+      targetIds: getTargetPanelIds(template, ['Right Panel']),
+      foldIds: getTargetFoldIds(template, ['bottom-right']),
       glueTabIds: [],
     },
     {
@@ -172,7 +172,7 @@ function buildOpenTrayModel(template: TemplateItem): AssemblyModel {
       cueKind: 'press-secure',
       cueLabel: 'Press Secure',
       targetIds: [
-        ...getTargetPanelIds(template, ['Front Wall', 'Back Wall']),
+        ...getTargetPanelIds(template, ['Front Panel', 'Back Panel']),
         ...glueTabIds,
       ],
       foldIds: [],

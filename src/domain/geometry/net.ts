@@ -18,6 +18,7 @@ export interface GlueTab {
   parentFaceId: string
   attachEdge: Edge
   polygon: Point[]
+  label?: string
 }
 
 export interface Flap {
@@ -33,6 +34,8 @@ export interface Fold {
   faceAId: string
   faceBId: string
   edge: Edge
+  angle: number
+  direction: 'mountain' | 'valley'
 }
 
 export interface Net {

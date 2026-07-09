@@ -36,12 +36,12 @@ function createFakeNet(overrides?: Partial<Net>): Net {
   }]
 
   const folds: Fold[] = [
-    { id: 'fold:front-right', faceAId: 'face:front', faceBId: 'face:right', edge: { start: { x: L, y: stripY }, end: { x: L, y: stripY + H } } },
-    { id: 'fold:right-back', faceAId: 'face:right', faceBId: 'face:back', edge: { start: { x: L + W, y: stripY }, end: { x: L + W, y: stripY + H } } },
-    { id: 'fold:back-left', faceAId: 'face:back', faceBId: 'face:left', edge: { start: { x: L + W + L, y: stripY }, end: { x: L + W + L, y: stripY + H } } },
-    { id: 'fold:front-top', faceAId: 'face:front', faceBId: 'face:top', edge: { start: { x: 0, y: stripY }, end: { x: L, y: stripY } } },
-    { id: 'fold:front-bottom', faceAId: 'face:front', faceBId: 'face:bottom', edge: { start: { x: 0, y: stripY + H }, end: { x: L, y: stripY + H } } },
-    { id: 'fold:glue-seam', faceAId: 'face:left', faceBId: 'gluetab:seam', edge: { start: { x: x1, y: stripY }, end: { x: x1, y: stripY + H } } },
+    { id: 'fold:front-right', faceAId: 'face:front', faceBId: 'face:right', edge: { start: { x: L, y: stripY }, end: { x: L, y: stripY + H } }, angle: 90, direction: 'mountain' },
+    { id: 'fold:right-back', faceAId: 'face:right', faceBId: 'face:back', edge: { start: { x: L + W, y: stripY }, end: { x: L + W, y: stripY + H } }, angle: 90, direction: 'mountain' },
+    { id: 'fold:back-left', faceAId: 'face:back', faceBId: 'face:left', edge: { start: { x: L + W + L, y: stripY }, end: { x: L + W + L, y: stripY + H } }, angle: 90, direction: 'mountain' },
+    { id: 'fold:front-top', faceAId: 'face:front', faceBId: 'face:top', edge: { start: { x: 0, y: stripY }, end: { x: L, y: stripY } }, angle: 90, direction: 'mountain' },
+    { id: 'fold:front-bottom', faceAId: 'face:front', faceBId: 'face:bottom', edge: { start: { x: 0, y: stripY + H }, end: { x: L, y: stripY + H } }, angle: 90, direction: 'mountain' },
+    { id: 'fold:glue-seam', faceAId: 'face:left', faceBId: 'gluetab:seam', edge: { start: { x: x1, y: stripY }, end: { x: x1, y: stripY + H } }, angle: 180, direction: 'valley' },
   ]
 
   return {

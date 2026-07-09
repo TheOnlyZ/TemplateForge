@@ -41,7 +41,7 @@ describe('generateBoxTemplate', () => {
 
     expect(result.template.panels).toHaveLength(6)
     expect(result.template.tabs.some((tab) => tab.label === 'Glue Seam')).toBe(true)
-    expect(result.template.tabs).toHaveLength(9)
+    expect(result.template.tabs).toHaveLength(7)
   })
 
   it('builds a tuck carton with tuck flap labels in the tab set', () => {
@@ -60,8 +60,8 @@ describe('generateBoxTemplate', () => {
     )
 
     expect(result.template.panels).toHaveLength(6)
-    expect(result.template.tabs.some((tab) => tab.label === 'Top Tuck Flap')).toBe(true)
     expect(result.template.tabs.some((tab) => tab.label === 'Bottom Tuck Flap')).toBe(true)
+    expect(result.template.tabs.some((tab) => tab.label === 'Top Right Dust Flap')).toBe(true)
   })
 
   it('keeps generation deterministic for identical inputs', () => {

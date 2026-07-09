@@ -20,7 +20,7 @@ describe('TemplatePreview', () => {
       },
     )
     const model = buildBoxAssemblyModel(template, 'open-tray')
-    const frontWallId = template.panels.find((panel) => panel.name === 'Front Wall')!.id
+    const frontWallId = template.panels.find((panel) => panel.name === 'Front Panel')!.id
     const { container } = render(
       <TemplatePreview
         template={template}
@@ -50,7 +50,7 @@ describe('TemplatePreview', () => {
     )
     const highlightedFoldIds = new Set(
       template.foldLines
-        .filter((line) => line.id.includes('front-wall') || line.id.includes('back-wall'))
+        .filter((line) => line.id.includes('bottom-front') || line.id.includes('bottom-back'))
         .map((line) => line.id),
     )
     const { container } = render(

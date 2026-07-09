@@ -135,13 +135,21 @@
   gap: var(--space-md);
 }
 
+.assembly-view__sequence-header > :first-child {
+  overflow: hidden;
+}
+
 .assembly-view__sequence-header p {
   margin: 0.3rem 0 0;
   color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .assembly-view__controls {
   width: auto;
+  flex-shrink: 0;
 }
 
 .assembly-view__cue-line {
@@ -243,13 +251,25 @@
   flex-shrink: 0;
 }
 
+.assembly-view__step > div {
+  overflow: hidden;
+  min-width: 0;
+}
+
 .assembly-view__step strong {
   display: block;
   margin-bottom: 0.15rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .assembly-view__step small {
   color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
 }
 
 .assembly-view__step.active {

@@ -10,15 +10,13 @@ import type {
 } from '../../templates/index.ts'
 import {
   createEntityId,
-  createRectangle,
   getOutlineBounds,
   getRectangleCenter,
   type ShapeGenerationContext,
   type ShapeGenerationResult,
 } from '../shared/index.ts'
 import type { Face } from '../../geometry/net.ts'
-import { buildStripNet } from './net-geometry.ts'
-import { netToTemplateItem } from './net-converter.ts'
+import { getBoxNetGenerator, buildOpenTrayCarton, type BoxNetType } from './nets.ts'
 
 export type BoxStyle = 'glue-tab-carton' | 'tuck-carton' | 'open-tray'
 
@@ -28,6 +26,7 @@ export interface BoxInput {
   externalHeightMm: number
   glueTabWidthMm: number
   style: BoxStyle
+  netType?: BoxNetType
 }
 
 export interface EdgeTabSpec {
@@ -214,212 +213,12 @@ function faceToPanel(face: Face, partId: string): Panel {
   }
 }
 
-function buildOpenTrayTemplate(
-  input: BoxInput,
-  context: ShapeGenerationContext,
-): ShapeGenerationResult {
-  const { externalHeightMm, externalLengthMm, externalWidthMm, glueTabWidthMm } = input
-  const partId = createEntityId(context, 'part', 'main')
-  const x0 = externalHeightMm + glueTabWidthMm
-  const y0 = externalHeightMm
-  const baseOutline = createRectangle(x0, y0, externalLengthMm, externalWidthMm)
-  const leftWallOutline = createRectangle(
-    x0 - externalHeightMm,
-    y0,
-    externalHeightMm,
-    externalWidthMm,
-  )
-  const rightWallOutline = createRectangle(
-    x0 + externalLengthMm,
-    y0,
-    externalHeightMm,
-    externalWidthMm,
-  )
-  const frontWallOutline = createRectangle(
-    x0,
-    y0 + externalWidthMm,
-    externalLengthMm,
-    externalHeightMm,
-  )
-  const backWallOutline = createRectangle(
-    x0,
-    y0 - externalHeightMm,
-    externalLengthMm,
-    externalHeightMm,
-  )
-
-  const panels: Panel[] = [
-    {
-      id: createEntityId(context, 'panel', 'base'),
-      partId,
-      name: 'Base',
-      outline: baseOutline,
-      bounds: getBounds(baseOutline),
-    },
-    {
-      id: createEntityId(context, 'panel', 'left-wall'),
-      partId,
-      name: 'Left Wall',
-      outline: leftWallOutline,
-      bounds: getBounds(leftWallOutline),
-    },
-    {
-      id: createEntityId(context, 'panel', 'right-wall'),
-      partId,
-      name: 'Right Wall',
-      outline: rightWallOutline,
-      bounds: getBounds(rightWallOutline),
-    },
-    {
-      id: createEntityId(context, 'panel', 'front-wall'),
-      partId,
-      name: 'Front Wall',
-      outline: frontWallOutline,
-      bounds: getBounds(frontWallOutline),
-    },
-    {
-      id: createEntityId(context, 'panel', 'back-wall'),
-      partId,
-      name: 'Back Wall',
-      outline: backWallOutline,
-      bounds: getBounds(backWallOutline),
-    },
-  ]
-
-  const tabs: Tab[] = [
-    createTab(
-      context,
-      partId,
-      'top-left',
-      'Tab A',
-      createVerticalGlueTab(x0, y0 - externalHeightMm, y0, 'left', glueTabWidthMm),
-    ),
-    createTab(
-      context,
-      partId,
-      'top-right',
-      'Tab B',
-      createVerticalGlueTab(
-        x0 + externalLengthMm,
-        y0 - externalHeightMm,
-        y0,
-        'right',
-        glueTabWidthMm,
-      ),
-    ),
-    createTab(
-      context,
-      partId,
-      'bottom-left',
-      'Tab C',
-      createVerticalGlueTab(
-        x0,
-        y0 + externalWidthMm,
-        y0 + externalWidthMm + externalHeightMm,
-        'left',
-        glueTabWidthMm,
-      ),
-    ),
-    createTab(
-      context,
-      partId,
-      'bottom-right',
-      'Tab D',
-      createVerticalGlueTab(
-        x0 + externalLengthMm,
-        y0 + externalWidthMm,
-        y0 + externalWidthMm + externalHeightMm,
-        'right',
-        glueTabWidthMm,
-      ),
-    ),
-  ]
-
-  const outline: Point[] = [
-    { x: x0, y: y0 - externalHeightMm },
-    { x: x0 + externalLengthMm, y: y0 - externalHeightMm },
-    { x: x0 + externalLengthMm, y: y0 },
-    { x: x0 + externalLengthMm + externalHeightMm, y: y0 },
-    { x: x0 + externalLengthMm + externalHeightMm, y: y0 + externalWidthMm },
-    { x: x0 + externalLengthMm, y: y0 + externalWidthMm },
-    { x: x0 + externalLengthMm, y: y0 + externalWidthMm + externalHeightMm },
-    { x: x0, y: y0 + externalWidthMm + externalHeightMm },
-    { x: x0, y: y0 + externalWidthMm },
-    { x: x0 - externalHeightMm, y: y0 + externalWidthMm },
-    { x: x0 - externalHeightMm, y: y0 },
-    { x: x0, y: y0 },
-  ]
-
-  const cutPaths: CutPath[] = [
-    {
-      id: createEntityId(context, 'cut', 'outline'),
-      partId,
-      path: outline,
-      style: 'solid',
-      closed: true,
-    },
-  ]
-
-  const foldLines: FoldLine[] = [
-    {
-      id: createEntityId(context, 'fold', 'back-wall'),
-      partId,
-      start: { x: x0, y: y0 },
-      end: { x: x0 + externalLengthMm, y: y0 },
-      foldType: 'score',
-      style: 'dashed',
-    },
-    {
-      id: createEntityId(context, 'fold', 'front-wall'),
-      partId,
-      start: { x: x0, y: y0 + externalWidthMm },
-      end: { x: x0 + externalLengthMm, y: y0 + externalWidthMm },
-      foldType: 'score',
-      style: 'dashed',
-    },
-    {
-      id: createEntityId(context, 'fold', 'left-wall'),
-      partId,
-      start: { x: x0, y: y0 },
-      end: { x: x0, y: y0 + externalWidthMm },
-      foldType: 'score',
-      style: 'dashed',
-    },
-    {
-      id: createEntityId(context, 'fold', 'right-wall'),
-      partId,
-      start: { x: x0 + externalLengthMm, y: y0 },
-      end: { x: x0 + externalLengthMm, y: y0 + externalWidthMm },
-      foldType: 'score',
-      style: 'dashed',
-    },
-    ...tabs.map((tab) => ({
-      id: createEntityId(context, 'fold', `tab-${tab.id}`),
-      partId,
-      start: tab.attachStart,
-      end: tab.attachEnd,
-      foldType: 'score' as const,
-      style: 'dashed' as const,
-    })),
-  ]
-
-  return buildTemplateItem(
-    input,
-    context,
-    panels,
-    cutPaths,
-    foldLines,
-    tabs,
-    'Fold the four walls up and glue the corner tabs behind the front and back walls to complete the tray.',
-  )
-}
-
 function buildCartonTemplate(
   input: BoxInput,
   context: ShapeGenerationContext,
 ): ShapeGenerationResult {
-  const net = buildStripNet(input)
-  return netToTemplateItem(net, input, context)
+  const generator = getBoxNetGenerator(input.netType ?? 'strip')
+  return generator(input, context)
 }
 
 export function generateBoxTemplate(
@@ -427,7 +226,7 @@ export function generateBoxTemplate(
   context: ShapeGenerationContext,
 ): ShapeGenerationResult {
   if (input.style === 'open-tray') {
-    return buildOpenTrayTemplate(input, context)
+    return buildOpenTrayCarton(input, context)
   }
 
   return buildCartonTemplate(input, context)

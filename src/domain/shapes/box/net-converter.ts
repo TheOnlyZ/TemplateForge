@@ -1,5 +1,5 @@
 import { getBounds, type Point } from '../../geometry/index.ts'
-import type { Net } from '../../geometry/net.ts'
+import type { Fold, Net } from '../../geometry/net.ts'
 import type { CutPath, FoldLine, Panel, Tab } from '../../templates/index.ts'
 import { createEntityId, getOutlineBounds, getRectangleCenter, type ShapeGenerationContext, type ShapeGenerationResult } from '../shared/index.ts'
 import { buildTemplateItem, type BoxInput } from './index.ts'
@@ -19,7 +19,7 @@ function faceToPanel(
 }
 
 function foldToFoldLine(
-  fold: { id: string; edge: { start: Point; end: Point } },
+  fold: Fold,
   partId: string,
   entityPrefix: string,
 ): FoldLine {
@@ -28,7 +28,7 @@ function foldToFoldLine(
     partId,
     start: fold.edge.start,
     end: fold.edge.end,
-    foldType: 'score',
+    foldType: fold.direction,
     style: 'dashed',
   }
 }
@@ -103,9 +103,11 @@ export function netToTemplateItem(
   ]
 
   const assemblyNote =
-    input.style === 'glue-tab-carton'
-      ? 'Glue the side seam first, then close the top and bottom flaps in sequence for a permanent carton build.'
-      : 'Glue the side seam first, then use the tuck flaps and dust flaps to close the carton without additional adhesive.'
+    input.style === 'open-tray'
+      ? 'Fold the four walls up and glue the corner tabs behind the front and back walls to complete the tray.'
+      : input.style === 'glue-tab-carton'
+        ? 'Glue the side seam first, then close the top and bottom flaps in sequence for a permanent carton build.'
+        : 'Glue the side seam first, then use the tuck flaps and dust flaps to close the carton without additional adhesive.'
 
   return buildTemplateItem(input, context, panels, cutPaths, foldLines, tabs, assemblyNote)
 }

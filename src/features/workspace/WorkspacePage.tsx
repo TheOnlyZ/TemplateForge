@@ -356,7 +356,23 @@ export function WorkspacePage() {
       />
 
       <main className={styles.workspace}>
-        <section className={styles.main}>
+        <aside>
+          <QueueSection
+            queueItems={queueItems}
+            editingQueueItemId={editingQueueItemId}
+            unitSystem={unitSystem}
+            onExportBatchPdf={exportProjectQueuePdf}
+            onExportItemPdf={exportQueueItemPdf}
+            onExportItemSvg={exportQueueItemSvg}
+            onEditItem={startEditingQueueItem}
+            onDuplicateItem={duplicateQueueItem}
+            onRemoveItem={removeQueueItem}
+            exportableCount={exportableQueueItems.length}
+            buildItemPreview={(item) => buildDraftPreview(item, item.id)}
+          />
+        </aside>
+
+        <section className={styles.canvas}>
           <div className={styles.infoBar}>
             <span className={styles.chip}>
               <span className={styles.chipLabel}>Draft</span>
@@ -396,66 +412,63 @@ export function WorkspacePage() {
             </span>
           </div>
 
-          <article className={styles.canvas}>
-            <div className={styles.previewGrid}>
-              <div className={styles.previewStage}>
-                <h3 className={styles.stageTitle}>Template Preview</h3>
-                <TemplatePreview
-                  faceLabelLookup={assemblyModel.targetIdToFaceLabel}
-                  faceTargetLookup={assemblyModel.targetIdToFaceId}
-                  glueTabIds={assemblyModel.glueTabIds}
-                  selectedFaceId={selectedAssemblyFaceId}
-                  template={preview.template}
-                  highlightedFoldIds={highlightedFoldIds}
-                  highlightedTargetIds={highlightedTargetIds}
-                  onFaceHoverChange={setHoveredAssemblyFaceId}
-                  onFaceSelect={setSelectedAssemblyFaceId}
-                />
-              </div>
-              <div className={styles.previewStage}>
-                <h3 className={styles.stageTitle}>3D Assembly</h3>
-                {preview.template.shapeType === 'cylinder' ? (
-                  <CylinderAssemblyView
-                    activeFaceId={effectiveAssemblyFaceId}
-                    activeStepId={activeAssemblyStep?.id ?? null}
-                    name={preview.template.name}
-                    cylinderInput={{
-                      diameterMm: Number(preview.template.dimensionsMm.diameter ?? 0),
-                      heightMm: Number(preview.template.dimensionsMm.height ?? 0),
-                    }}
-                    mode={assemblyMode}
-                    model={assemblyModel}
-                    onFaceHoverChange={setHoveredAssemblyFaceId}
-                    onFaceSelect={setSelectedAssemblyFaceId}
-                    onModeChange={setAssemblyMode}
-                    onStepChange={setActiveAssemblyStepId}
-                    partMappings={assemblyPartMappings}
-                    selectedFaceId={selectedAssemblyFaceId}
-                    unitSystem={unitSystem}
-                  />
-                ) : (
-                  <BoxAssemblyView
-                    activeFaceId={effectiveAssemblyFaceId}
-                    activeStepId={activeAssemblyStep?.id ?? null}
-                    name={draft.name}
-                    boxInput={draft.boxInput}
-                    mode={assemblyMode}
-                    model={assemblyModel}
-                    onFaceHoverChange={setHoveredAssemblyFaceId}
-                    onFaceSelect={setSelectedAssemblyFaceId}
-                    onModeChange={setAssemblyMode}
-                    onStepChange={setActiveAssemblyStepId}
-                    partMappings={assemblyPartMappings}
-                    selectedFaceId={selectedAssemblyFaceId}
-                    unitSystem={unitSystem}
-                  />
-                )}
-              </div>
-            </div>
-          </article>
+          <div className={styles.previewStage}>
+            <h3 className={styles.stageTitle}>Template Preview</h3>
+            <TemplatePreview
+              faceLabelLookup={assemblyModel.targetIdToFaceLabel}
+              faceTargetLookup={assemblyModel.targetIdToFaceId}
+              glueTabIds={assemblyModel.glueTabIds}
+              selectedFaceId={selectedAssemblyFaceId}
+              template={preview.template}
+              highlightedFoldIds={highlightedFoldIds}
+              highlightedTargetIds={highlightedTargetIds}
+              onFaceHoverChange={setHoveredAssemblyFaceId}
+              onFaceSelect={setSelectedAssemblyFaceId}
+            />
+          </div>
+
+          <div className={styles.previewStage}>
+            <h3 className={styles.stageTitle}>3D Assembly</h3>
+            {preview.template.shapeType === 'cylinder' ? (
+              <CylinderAssemblyView
+                activeFaceId={effectiveAssemblyFaceId}
+                activeStepId={activeAssemblyStep?.id ?? null}
+                name={preview.template.name}
+                cylinderInput={{
+                  diameterMm: Number(preview.template.dimensionsMm.diameter ?? 0),
+                  heightMm: Number(preview.template.dimensionsMm.height ?? 0),
+                }}
+                mode={assemblyMode}
+                model={assemblyModel}
+                onFaceHoverChange={setHoveredAssemblyFaceId}
+                onFaceSelect={setSelectedAssemblyFaceId}
+                onModeChange={setAssemblyMode}
+                onStepChange={setActiveAssemblyStepId}
+                partMappings={assemblyPartMappings}
+                selectedFaceId={selectedAssemblyFaceId}
+                unitSystem={unitSystem}
+              />
+            ) : (
+              <BoxAssemblyView
+                activeFaceId={effectiveAssemblyFaceId}
+                activeStepId={activeAssemblyStep?.id ?? null}
+                name={draft.name}
+                boxInput={draft.boxInput}
+                mode={assemblyMode}
+                model={assemblyModel}
+                onFaceHoverChange={setHoveredAssemblyFaceId}
+                onFaceSelect={setSelectedAssemblyFaceId}
+                onModeChange={setAssemblyMode}
+                onStepChange={setActiveAssemblyStepId}
+                partMappings={assemblyPartMappings}
+                selectedFaceId={selectedAssemblyFaceId}
+                unitSystem={unitSystem}
+              />
+            )}
+          </div>
         </section>
 
-        <aside className={styles.sidebar}>
+        <aside>
           <BoxWizard
             unitSystem={unitSystem}
             previewTemplate={preview.template}
@@ -464,24 +477,12 @@ export function WorkspacePage() {
             onExportPreviewPdf={exportDraftPdf}
             onExportPreviewSvg={exportDraftSvg}
           />
-
-          <QueueSection
-            queueItems={queueItems}
-            editingQueueItemId={editingQueueItemId}
-            unitSystem={unitSystem}
-            onExportBatchPdf={exportProjectQueuePdf}
-            onExportItemPdf={exportQueueItemPdf}
-            onExportItemSvg={exportQueueItemSvg}
-            onEditItem={startEditingQueueItem}
-            onDuplicateItem={duplicateQueueItem}
-            onRemoveItem={removeQueueItem}
-            exportableCount={exportableQueueItems.length}
-            buildItemPreview={(item) => buildDraftPreview(item, item.id)}
-          />
-
-          <ValidationPanel messages={preview.validation.messages} />
         </aside>
       </main>
+
+      <div className={styles.validationBar}>
+        <ValidationPanel messages={preview.validation.messages} />
+      </div>
     </>
   )
 }

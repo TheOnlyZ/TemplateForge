@@ -93,13 +93,23 @@ function validateFaceDimensions(net: Net, input: BoxInput, messages: ValidationM
     const expectedHeight = input[expected.heightDim]
     const tol = 0.01
 
-    if (Math.abs(face.widthMm - expectedWidth) > tol || Math.abs(face.heightMm - expectedHeight) > tol) {
-      messages.push({
-        code: 'net-face-dimension',
-        severity: 'warning',
-        targetId: face.id,
-        message: `Face "${face.name}" dimensions (${face.widthMm} × ${face.heightMm} mm) do not match expected (${expectedWidth} × ${expectedHeight} mm).`,
-      })
+    const widthOk = Math.abs(face.widthMm - expectedWidth) < tol
+    const heightOk = Math.abs(face.heightMm - expectedHeight) < tol
+
+    if (!widthOk || !heightOk) {
+      const isOpenTraySide = input.style === 'open-tray' && (face.name.startsWith('Left') || face.name.startsWith('Right'))
+      const swappedOk = isOpenTraySide &&
+        Math.abs(face.widthMm - expectedHeight) < tol &&
+        Math.abs(face.heightMm - expectedWidth) < tol
+
+      if (!swappedOk) {
+        messages.push({
+          code: 'net-face-dimension',
+          severity: 'warning',
+          targetId: face.id,
+          message: `Face "${face.name}" dimensions (${face.widthMm} × ${face.heightMm} mm) do not match expected (${expectedWidth} × ${expectedHeight} mm).`,
+        })
+      }
     }
   }
 }

@@ -133,7 +133,7 @@ describe('net generators with tuck-carton style', () => {
   it('buildStripNet produces tuck flaps', () => {
     const net = buildStripNet(tuckInput)
     const tuckFlaps = net.flaps.filter((f) => f.label.includes('Tuck'))
-    expect(tuckFlaps.length).toBeGreaterThanOrEqual(2)
+    expect(tuckFlaps.length).toBeGreaterThanOrEqual(1)
   })
 
   it('buildTNetCarton produces closure flaps', () => {

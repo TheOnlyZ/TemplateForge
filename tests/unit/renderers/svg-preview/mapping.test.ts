@@ -22,9 +22,9 @@ describe('renderTemplatePreview', () => {
 
     expect(scene.viewBox).toContain(' ')
     expect(scene.panelPaths).toHaveLength(5)
-    expect(scene.cutPaths).toHaveLength(1)
+    expect(scene.cutPaths).toHaveLength(9)
     expect(scene.tabPaths).toHaveLength(4)
     expect(scene.foldPaths).toHaveLength(8)
-    expect(scene.labels.map((label) => label.text)).toContain('Base')
+    expect(scene.labels.map((label) => label.text)).toContain('Bottom Panel')
   })
 })
