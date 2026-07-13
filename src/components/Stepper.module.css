@@ -8,16 +8,28 @@
 }
 
 .step {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.35rem 0.6rem;
   border-radius: var(--radius-full);
   font-size: var(--text-xs);
   color: var(--text-muted);
   border: 1px solid transparent;
   transition: background var(--transition), border-color var(--transition), color var(--transition);
-  cursor: default;
+}
+
+.stepButton {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.6rem;
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.stepButton:focus-visible {
+  outline: none;
 }
 
 .step.active {

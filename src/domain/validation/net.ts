@@ -1,5 +1,6 @@
 import type { Net } from '../geometry/net.ts'
 import type { BoxInput } from '../shapes/box/index.ts'
+import { getBoxTopologyForNet } from '../shapes/box/topology.ts'
 import type { ValidationMessage, ValidationResult } from './index.ts'
 
 const VALID_FACE_NAMES = new Set([
@@ -60,18 +61,21 @@ export function validateNet(net: Net, input: BoxInput): ValidationResult {
 }
 
 function validateFaceCount(net: Net, input: BoxInput, messages: ValidationMessage[]) {
-  const expected = input.style === 'open-tray' ? 5 : 6
+  const topology = getBoxTopologyForNet(net)
+  const expected = topology.expectedFaceCount
 
   if (net.faces.length !== expected) {
     messages.push({
       code: 'net-face-count',
       severity: 'warning',
-      message: `Expected ${expected} faces for ${input.style} but got ${net.faces.length}.`,
+      message: `Expected ${expected} faces for ${topology.label} topology but got ${net.faces.length}.`,
     })
   }
 }
 
 function validateFaceDimensions(net: Net, input: BoxInput, messages: ValidationMessage[]) {
+  const topology = getBoxTopologyForNet(net)
+
   for (const face of net.faces) {
     if (face.widthMm <= 0 || face.heightMm <= 0) {
       messages.push({
@@ -97,7 +101,7 @@ function validateFaceDimensions(net: Net, input: BoxInput, messages: ValidationM
     const heightOk = Math.abs(face.heightMm - expectedHeight) < tol
 
     if (!widthOk || !heightOk) {
-      const isOpenTraySide = input.style === 'open-tray' && (face.name.startsWith('Left') || face.name.startsWith('Right'))
+      const isOpenTraySide = topology.allowSwappedSideDimensions && (face.name.startsWith('Left') || face.name.startsWith('Right'))
       const swappedOk = isOpenTraySide &&
         Math.abs(face.widthMm - expectedHeight) < tol &&
         Math.abs(face.heightMm - expectedWidth) < tol

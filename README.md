@@ -52,15 +52,15 @@ src/
 
 ## Status
 
-**169 tests across 36 files** — shape generators, net validation, layout engine (including multi-piece splitting with join tabs), React components, store, persistence, PDF/SVG export.
+**174 tests across 36 files** — shape generators, topology-aware net validation, layout engine (including multi-piece splitting with join tabs), React components, store, persistence, PDF/SVG export.
 
 ### UI
 
 - **Tailwind v4 + shadcn/ui** — Button, Card, Input, Select, Badge, Stepper migrated
-- **2-column layout** — canvas (1fr) / wizard (right, 20rem); collapsible queue drawer below the grid; collapsible Issues section inside wizard card
-- **6-step wizard** — Shape → Dimensions → Style → Material → Paper → Preview; inline status badge (Fits / Multi-piece / Blocked) with error/warning counts; auto-advance on (shape/style/material) selection
+- **2-column layout** — canvas (1fr) / wizard (right, 20rem); page-level scrolling; collapsible queue drawer below the grid; collapsible Issues section inside wizard card
+- **6-step wizard** — Shape → Dimensions → Style → Material → Paper → Preview; clickable step links; fit status shown from Step 2 onward below step content; auto-advance on (shape/style/material) selection; `Start Over` resets only the current draft and preserves the queue
 - **Multi-piece layout** — nets that exceed the printable area are automatically split along fold lines into 2 printable assemblies with a physical glue tab, receiving-edge label, and assembly labels
-- **Dark theme** — `#0b1119` background, 150ms transitions, focus rings, reduced border opacity
+- **Dark theme** — `#0b1119` background, 150ms transitions, focus rings, subtle global border contrast, improved wizard footer responsiveness
 
 ### Future
 

@@ -1,5 +1,18 @@
 # Changelog
 
+## v3.2 — Topology-aware validation + responsive wizard footer (2026-07)
+
+- **Topology-aware box validation** — `validateNet` now derives expected face-count and open-tray side-dimension behavior from canonical topology definitions rather than `input.style` string checks
+- **Unified preview generation path** — `WorkspacePage` now uses `generateBoxTemplateCandidates(...)` instead of bypassing style-aware box generation with raw carton net generators; this fixes the incorrect `open-tray` 5-vs-6 face warning in preview validation
+- **Single-scroll desktop layout** — removed the nested wizard sidebar scroller so the page owns vertical scrolling; reduced preview and assembly height pressure for better below-the-fold discoverability
+- **Assembly renderer fix** — corrected the open-tray SVG opening overlay by sharing the same viewport transform as the box faces; added missing assembly face/opening CSS classes to prevent the opaque black-plane artifact
+- **Clickable wizard step links** — users can now click Shape / Dimensions / Style / Material / Paper / Preview directly in the stepper to navigate to that step
+- **Wizard fit status placement** — Fits / Multi-piece / Blocked status now appears from Step 2 onward and is rendered below the active step content instead of above it
+- **Draft reset flow** — added store-level `resetDraft()` and a `Start Over` action in the wizard footer; resets the current draft to Step 1, exits edit mode, and preserves queue items
+- **Responsive wizard footer** — split footer actions from navigation; export/reset actions wrap cleanly and Back/Next remain visible in a stable two-column navigation row
+- **Subtle border contrast increase** — global `--border` token bumped from `rgba(147, 168, 193, 0.10)` to `rgba(147, 168, 193, 0.13)` for slightly clearer UI separation
+- All 174 tests pass (36 files)
+
 ## v3.1 — Join tabs + wizard polish (2026-07)
 
 - **Physical join tabs for multi-piece assemblies** — `splitTemplateAtCandidate` now generates a real glue-tab polygon extending outward from the join edge along the split line. The tab is added as a `Tab` (cut line), `FoldLine` (fold), and `Annotation` (label) to one assembly, while the matching assembly gets a receiving-edge instruction label

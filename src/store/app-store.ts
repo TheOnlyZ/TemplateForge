@@ -119,6 +119,7 @@ interface AppState {
   setDraftMargin: (side: keyof MarginConfig, value: number) => void
   setDraftDimension: (dimension: keyof Omit<BoxInput, 'style'>, value: number) => void
   setDraftCylinderDimension: (dimension: keyof CylinderInput, value: number) => void
+  resetDraft: () => void
   setDraftStep: (step: BoxWizardStepId) => void
   nextDraftStep: () => void
   previousDraftStep: () => void
@@ -207,6 +208,12 @@ export const useAppStore = create<AppState>((set) => ({
           [dimension]: value,
         },
       },
+    })),
+  resetDraft: () =>
+    set((state) => ({
+      draft: createDefaultDraft(state.nextQueueIndex),
+      draftStep: 'shape',
+      editingQueueItemId: null,
     })),
   setDraftStep: (step) => set({ draftStep: step }),
   nextDraftStep: () =>

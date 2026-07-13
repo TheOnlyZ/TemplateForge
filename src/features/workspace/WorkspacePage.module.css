@@ -3,13 +3,11 @@
   grid-template-columns: 1fr 20rem;
   gap: var(--space-xl);
   padding: var(--space-xl);
-  flex: 1;
   overflow-x: hidden;
 }
 
 .rightPanel {
-  max-height: calc(100vh - 10rem);
-  overflow-y: auto;
+  align-self: start;
 }
 
 .canvas {

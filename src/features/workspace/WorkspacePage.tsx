@@ -25,9 +25,7 @@ import {
 import { layoutTemplate } from '../../domain/layout/index.ts'
 import { getMaterialDefinition } from '../../domain/materials/index.ts'
 import { getPaperDefinition, type Orientation, type OrientationPreference } from '../../domain/paper/index.ts'
-import { generateBoxTemplate, type BoxNetType } from '../../domain/shapes/box/index.ts'
-import { getNetGenerator } from '../../domain/shapes/box/net-geometry.ts'
-import { netToTemplateItem } from '../../domain/shapes/box/net-converter.ts'
+import { generateBoxTemplateCandidates, generateBoxTemplate, type BoxNetType } from '../../domain/shapes/box/index.ts'
 import { generateCylinderTemplate } from '../../domain/shapes/cylinder/index.ts'
 import { formatLength } from '../../domain/units/index.ts'
 import {
@@ -44,9 +42,6 @@ import {
 import { type BoxDraft, useAppStore } from '../../store/app-store.ts'
 import type { LayoutStatus } from '../../domain/layout/index.ts'
 import styles from './WorkspacePage.module.css'
-
-const GLUE_TAB_CARTON_NET_ORDER: BoxNetType[] = ['strip']
-const ALL_NET_ORDER: BoxNetType[] = ['strip', 'cross', 't-layout']
 
 function calculateTotalOverflow(layout: { printableAreaOverflow: boolean; pages: { printableBounds: { width: number; height: number }; partPlacements: { bounds: { x: number; y: number; width: number; height: number } }[] }[] }) {
   if (!layout.printableAreaOverflow) return 0
@@ -98,22 +93,18 @@ function buildDraftPreview(draft: BoxDraft, templateId?: string) {
   const input = draft.boxInput
   let bestLayout = null as ReturnType<typeof layoutTemplate> | null
   let bestTemplateItem = null as import('../../domain/templates/index.ts').TemplateItem | null
-  let bestNetType: BoxNetType = 'strip'
+  let bestNetType = null as BoxNetType | null
   let bestNetValidation = null as ReturnType<typeof validateNet> | null
 
-  const netOrder = draft.boxInput.style === 'glue-tab-carton' ? GLUE_TAB_CARTON_NET_ORDER : ALL_NET_ORDER
-
-  for (const netType of netOrder) {
-    const generator = getNetGenerator(netType)
-    const net = generator(input)
-    const netVal = validateNet(net, input)
-    const result = netToTemplateItem(net, input, ctx)
+  for (const candidate of generateBoxTemplateCandidates(input, ctx)) {
+    const netVal = validateNet(candidate.net, input)
+    const result = candidate.result
     const layout = layoutTemplate(result.template, paper, draft.orientation, draft.margins)
 
     if (!layout.printableAreaOverflow) {
       bestLayout = layout
       bestTemplateItem = result.template
-      bestNetType = netType
+      bestNetType = candidate.netType
       bestNetValidation = netVal
       break
     }
@@ -124,7 +115,7 @@ function buildDraftPreview(draft: BoxDraft, templateId?: string) {
     ) {
       bestLayout = layout
       bestTemplateItem = result.template
-      bestNetType = netType
+      bestNetType = candidate.netType
       bestNetValidation = netVal
     }
   }

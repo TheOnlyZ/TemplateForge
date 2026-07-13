@@ -70,6 +70,7 @@ export function BoxWizard({
     editingQueueItemId,
     nextDraftStep,
     previousDraftStep,
+    resetDraft,
     setDraftCylinderDimension,
     setDraftDimension,
     setDraftMargin,
@@ -86,6 +87,7 @@ export function BoxWizard({
   const activeMaterial = getMaterialDefinition(draft.materialId)
   const isEditingQueueItem = editingQueueItemId !== null
   const alternateUnitSystem = unitSystem === 'metric' ? 'imperial' : 'metric'
+  const showLayoutStatus = stepIndex > 0
 
   const [issuesOpen, setIssuesOpen] = useState(messages.length > 0)
   const prevShapeType = useRef(draft.shapeType)
@@ -152,18 +154,8 @@ export function BoxWizard({
       <Stepper
         steps={steps}
         activeIndex={stepIndex}
+        onStepSelect={(stepId) => setDraftStep(stepId as BoxWizardStepId)}
       />
-
-      <div className={`layout-status layout-status--${layoutStatus.type}`}>
-        <Badge variant={
-          layoutStatus.type === 'single-piece' ? 'success' :
-          layoutStatus.type === 'multi-piece' ? 'warning' : 'accent'
-        } dot>
-          {layoutStatus.type === 'single-piece' ? 'Fits' :
-           layoutStatus.type === 'multi-piece' ? 'Multi-piece' : 'Blocked'}
-        </Badge>
-        <span className="layout-status__text">{layoutStatus.description}</span>
-      </div>
 
       {draftStep === 'shape' && (
         <div className="style-grid">
@@ -370,6 +362,21 @@ export function BoxWizard({
         </div>
       )}
 
+      {showLayoutStatus && (
+        <div className={`layout-status layout-status--${layoutStatus.type}`}>
+          <span className="layout-status__headline">
+            <Badge variant={
+              layoutStatus.type === 'single-piece' ? 'success' :
+              layoutStatus.type === 'multi-piece' ? 'warning' : 'accent'
+            } dot>
+              {layoutStatus.type === 'single-piece' ? 'Fits' :
+               layoutStatus.type === 'multi-piece' ? 'Multi-piece' : 'Blocked'}
+            </Badge>
+          </span>
+          <span className="layout-status__text">{layoutStatus.description}</span>
+        </div>
+      )}
+
       <div className="wizard-issues">
         <button
           type="button"
@@ -401,15 +408,18 @@ export function BoxWizard({
       </div>
 
       <div className="wizard-footer">
-        <div className="toolbar-group">
+        <div className="wizard-footer__actions toolbar-group">
           <Button onClick={onExportPreviewPdf} disabled={!canExportPreviewPdf} title={!canExportPreviewPdf ? layoutStatus.description : ''}>
             PDF
           </Button>
           <Button onClick={onExportPreviewSvg} disabled={!canExportPreviewSvg} title={!canExportPreviewSvg ? layoutStatus.description : ''}>
             SVG
           </Button>
+          <Button onClick={() => resetDraft()}>
+            Start Over
+          </Button>
         </div>
-        <div className="toolbar-group">
+        <div className="wizard-footer__nav">
           <Button onClick={() => previousDraftStep()} disabled={stepIndex === 0}>
             Back
           </Button>

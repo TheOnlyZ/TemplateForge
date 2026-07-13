@@ -102,7 +102,7 @@ function getPolygonCenter(points: Point2D[]) {
   }
 }
 
-function translatePoints(points: Point2D[]) {
+function getViewportTransform(points: Point2D[]) {
   let minX = Number.POSITIVE_INFINITY
   let minY = Number.POSITIVE_INFINITY
   let maxX = Number.NEGATIVE_INFINITY
@@ -117,14 +117,28 @@ function translatePoints(points: Point2D[]) {
 
   const width = maxX - minX || 1
   const height = maxY - minY || 1
-  const fitScale = Math.min((VIEWPORT_WIDTH * 0.68) / width, (VIEWPORT_HEIGHT * 0.68) / height)
-  const offsetX = VIEWPORT_WIDTH / 2 - ((minX + maxX) / 2) * fitScale
-  const offsetY = VIEWPORT_HEIGHT / 2 - ((minY + maxY) / 2) * fitScale
+  return {
+    fitScale: Math.min((VIEWPORT_WIDTH * 0.68) / width, (VIEWPORT_HEIGHT * 0.68) / height),
+    centerX: (minX + maxX) / 2,
+    centerY: (minY + maxY) / 2,
+  }
+}
+
+function applyViewportTransform(
+  points: Point2D[],
+  transform: ReturnType<typeof getViewportTransform>,
+) {
+  const offsetX = VIEWPORT_WIDTH / 2 - transform.centerX * transform.fitScale
+  const offsetY = VIEWPORT_HEIGHT / 2 - transform.centerY * transform.fitScale
 
   return points.map((point) => ({
-    x: point.x * fitScale + offsetX,
-    y: point.y * fitScale + offsetY,
+    x: point.x * transform.fitScale + offsetX,
+    y: point.y * transform.fitScale + offsetY,
   }))
+}
+
+function translatePoints(points: Point2D[]) {
+  return applyViewportTransform(points, getViewportTransform(points))
 }
 
 function getStyleLabel(style: BoxStyle) {
@@ -390,7 +404,19 @@ export function BoxAssemblyView({
     face,
     ...transformFace(face, explodedFactors[face.id] ?? 0, yaw, pitch, cameraDistance, explosionDistance),
   }))
-  const translatedPoints = translatePoints(transformedFaces.flatMap((item) => item.points))
+  const projectedOpening =
+    geometry.openTop === undefined
+      ? undefined
+      : {
+          outer: geometry.openTop.outer.map((point) => projectPoint(rotatePoint(point, yaw, pitch), cameraDistance)),
+          inner: geometry.openTop.inner.map((point) => projectPoint(rotatePoint(point, yaw, pitch), cameraDistance)),
+        }
+  const viewportTransform = getViewportTransform([
+    ...transformedFaces.flatMap((item) => item.points),
+    ...(projectedOpening?.outer ?? []),
+    ...(projectedOpening?.inner ?? []),
+  ])
+  const translatedPoints = applyViewportTransform(transformedFaces.flatMap((item) => item.points), viewportTransform)
   let pointCursor = 0
   const renderedFaces: RenderedFace[] = transformedFaces.map((item) => {
     const points = translatedPoints.slice(pointCursor, pointCursor + item.points.length)
@@ -406,18 +432,12 @@ export function BoxAssemblyView({
     }
   })
   const renderedOpening =
-    geometry.openTop === undefined
+    projectedOpening === undefined
       ? undefined
-      : (() => {
-          const outer = geometry.openTop.outer.map((point) => projectPoint(rotatePoint(point, yaw, pitch), cameraDistance))
-          const inner = geometry.openTop.inner.map((point) => projectPoint(rotatePoint(point, yaw, pitch), cameraDistance))
-          const translated = translatePoints([...outer, ...inner])
-
-          return {
-            outer: translated.slice(0, outer.length),
-            inner: translated.slice(outer.length),
-          }
-        })()
+      : {
+          outer: applyViewportTransform(projectedOpening.outer, viewportTransform),
+          inner: applyViewportTransform(projectedOpening.inner, viewportTransform),
+        }
   const depthOrder = getFaceDepthOrder(model)
   const sortedFaces = [...renderedFaces].sort((first, second) => {
     if (first.averageDepth !== second.averageDepth) {

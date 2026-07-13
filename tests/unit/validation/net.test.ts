@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { validateNet } from '../../../src/domain/validation/index.ts'
+import { buildOpenTrayNet } from '../../../src/domain/shapes/box/net-geometry.ts'
 import type { Net, Face, GlueTab, Fold } from '../../../src/domain/geometry/net.ts'
 import type { BoxInput } from '../../../src/domain/shapes/box/index.ts'
 
@@ -66,6 +67,16 @@ describe('validateNet', () => {
     const result = validateNet(net, input)
     expect(result.messages.some((m) => m.code === 'net-face-count')).toBe(true)
     expect(result.valid).toBe(true)
+  })
+
+  it('uses canonical net topology instead of style name for face-count validation', () => {
+    const trayInput: BoxInput = {
+      ...input,
+      style: 'open-tray',
+    }
+
+    const result = validateNet(buildOpenTrayNet(trayInput), trayInput)
+    expect(result.messages.some((m) => m.code === 'net-face-count')).toBe(false)
   })
 
   it('warns when a face has non-positive dimensions', () => {

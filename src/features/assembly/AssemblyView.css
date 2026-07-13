@@ -2,12 +2,12 @@
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  overflow: hidden;
 }
 
 .assembly-view__scene {
   width: 100%;
-  min-height: 22rem;
+  min-height: 18rem;
+  max-height: 42vh;
   aspect-ratio: 420 / 320;
   border-radius: var(--radius-md);
   overflow: hidden;
@@ -34,10 +34,19 @@
 .assembly-view__face--front { fill: rgba(124, 132, 146, 0.85); }
 .assembly-view__face--back { fill: rgba(90, 98, 110, 0.75); }
 .assembly-view__face--left { fill: rgba(98, 106, 118, 0.8); }
+.assembly-view__face--right { fill: rgba(92, 101, 114, 0.84); }
 .assembly-view__face--side { fill: rgba(92, 101, 114, 0.84); }
 .assembly-view__face--top { fill: rgba(146, 154, 166, 0.9); }
+.assembly-view__face--body { fill: rgba(124, 132, 146, 0.85); }
+.assembly-view__face--bottom { fill: rgba(76, 82, 94, 0.88); }
 .assembly-view__face--rim { fill: rgba(138, 146, 158, 0.88); }
 .assembly-view__face--base { fill: rgba(76, 82, 94, 0.88); }
+
+.assembly-view__opening-rim {
+  fill: rgba(138, 146, 158, 0.88);
+  stroke: rgba(244, 247, 251, 0.18);
+  stroke-width: 1;
+}
 
 .assembly-view__opening {
   fill: rgba(8, 13, 22, 0.85);
@@ -73,11 +82,13 @@
   fill: rgba(244, 247, 251, 0.7);
 }
 
-.assembly-view__face-group {
+.assembly-view__face-group,
+.assembly-view__face-layer {
   cursor: pointer;
 }
 
-.assembly-view__face-group:focus-visible {
+.assembly-view__face-group:focus-visible,
+.assembly-view__face-layer:focus-visible {
   outline: none;
 }
 

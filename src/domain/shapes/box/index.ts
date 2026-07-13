@@ -15,8 +15,9 @@ import {
   type ShapeGenerationContext,
   type ShapeGenerationResult,
 } from '../shared/index.ts'
-import type { Face } from '../../geometry/net.ts'
+import type { Face, Net } from '../../geometry/net.ts'
 import { getBoxNetGenerator, buildOpenTrayCarton, type BoxNetType } from './nets.ts'
+export { generateBoxTemplateCandidates, type BoxTemplateCandidate } from './candidates.ts'
 
 export type BoxStyle = 'glue-tab-carton' | 'tuck-carton' | 'open-tray'
 
@@ -27,6 +28,11 @@ export interface BoxInput {
   glueTabWidthMm: number
   style: BoxStyle
   netType?: BoxNetType
+}
+
+export interface BoxNetValidationSource {
+  netType: BoxNetType | null
+  net: Net
 }
 
 export interface EdgeTabSpec {

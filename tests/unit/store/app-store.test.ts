@@ -87,6 +87,25 @@ describe('app store queue editing', () => {
     expect(state.draftStep).toBe('dimensions')
   })
 
+  it('resets only the current draft and returns to step 1', () => {
+    useAppStore.getState().setDraftName('Queued Box')
+    useAppStore.getState().addDraftToQueue()
+
+    const itemId = useAppStore.getState().queueItems[0]!.id
+    useAppStore.getState().startEditingQueueItem(itemId)
+    useAppStore.getState().setDraftName('Unsaved Change')
+    useAppStore.getState().setDraftStep('paper')
+    useAppStore.getState().resetDraft()
+
+    const state = useAppStore.getState()
+
+    expect(state.queueItems).toHaveLength(1)
+    expect(state.queueItems[0]!.name).toBe('Queued Box')
+    expect(state.editingQueueItemId).toBeNull()
+    expect(state.draft.name).toBe('Rectangular Box 2')
+    expect(state.draftStep).toBe('shape')
+  })
+
   it('clears edit mode when the currently edited queue item is removed', () => {
     useAppStore.getState().setDraftName('Removable Box')
     useAppStore.getState().addDraftToQueue()
