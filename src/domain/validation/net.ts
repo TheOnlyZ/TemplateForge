@@ -60,7 +60,7 @@ export function validateNet(net: Net, input: BoxInput): ValidationResult {
   return buildResult(messages)
 }
 
-function validateFaceCount(net: Net, input: BoxInput, messages: ValidationMessage[]) {
+function validateFaceCount(net: Net, _input: BoxInput, messages: ValidationMessage[]) {
   const topology = getBoxTopologyForNet(net)
   const expected = topology.expectedFaceCount
 

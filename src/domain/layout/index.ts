@@ -863,7 +863,6 @@ function moveJoinTabToAssembly(
   const fromName = fromPart.name
   const toName = toPart.name
   const joinEdgeA = template.joinEdges.find((e) => e.partId === fromPartId)
-  const joinEdgeB = template.joinEdges.find((e) => e.partId === toPartId)
 
   tab.label = `Glue Tab — Join to ${fromName}`
   if (tabLabel) {

@@ -15,7 +15,7 @@ import {
   type ShapeGenerationContext,
   type ShapeGenerationResult,
 } from '../shared/index.ts'
-import type { Face, Net } from '../../geometry/net.ts'
+import type { Net } from '../../geometry/net.ts'
 import { getBoxNetGenerator, buildOpenTrayCarton, type BoxNetType } from './nets.ts'
 export { generateBoxTemplateCandidates, type BoxTemplateCandidate } from './candidates.ts'
 
@@ -206,16 +206,6 @@ export function buildTemplateItem(
         queueStatus: 'draft',
       },
     },
-  }
-}
-
-function faceToPanel(face: Face, partId: string): Panel {
-  return {
-    id: partId + ':' + face.id,
-    partId,
-    name: face.name,
-    outline: [...face.polygon],
-    bounds: getBounds(face.polygon),
   }
 }
 

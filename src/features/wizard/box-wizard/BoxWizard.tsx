@@ -9,7 +9,6 @@ import { getPaperSizeOptions } from '../../../domain/paper/index.ts'
 import type { TemplateItem } from '../../../domain/templates/index.ts'
 import {
   formatEditableLength,
-  formatLength,
   getUnitSuffix,
   parseEditableLengthInput,
   type UnitSystem,
@@ -86,7 +85,6 @@ export function BoxWizard({
   const stepIndex = steps.findIndex((step) => step.id === draftStep)
   const activeMaterial = getMaterialDefinition(draft.materialId)
   const isEditingQueueItem = editingQueueItemId !== null
-  const alternateUnitSystem = unitSystem === 'metric' ? 'imperial' : 'metric'
   const showLayoutStatus = stepIndex > 0
 
   const [issuesOpen, setIssuesOpen] = useState(messages.length > 0)
@@ -128,10 +126,6 @@ export function BoxWizard({
 
   function parseInputValue(value: string) {
     return parseEditableLengthInput(Number(value), unitSystem)
-  }
-
-  function formatAlternateLength(valueMm: number) {
-    return `≈ ${formatLength(valueMm, alternateUnitSystem)}`
   }
 
   const headerNode = (
@@ -366,7 +360,7 @@ export function BoxWizard({
         <div className={`layout-status layout-status--${layoutStatus.type}`}>
           <span className="layout-status__headline">
             <Badge variant={
-              layoutStatus.type === 'single-piece' ? 'success' :
+              layoutStatus.type === 'single-piece' ? 'default' :
               layoutStatus.type === 'multi-piece' ? 'warning' : 'accent'
             } dot>
               {layoutStatus.type === 'single-piece' ? 'Fits' :

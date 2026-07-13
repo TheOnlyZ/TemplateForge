@@ -137,10 +137,6 @@ function applyViewportTransform(
   }))
 }
 
-function translatePoints(points: Point2D[]) {
-  return applyViewportTransform(points, getViewportTransform(points))
-}
-
 function getStyleLabel(style: BoxStyle) {
   if (style === 'open-tray') {
     return 'Open Tray'

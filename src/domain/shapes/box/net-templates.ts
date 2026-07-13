@@ -241,7 +241,6 @@ export function layoutTemplate(template: NetTemplate, input: BoxInput): { faces:
     dims.set(label, faceDims(label, input))
   }
 
-  const rootDims = dims.get(template.root)!
   pos.set(template.root, { x: 0, y: 0 })
   placed.add(template.root)
 
@@ -292,7 +291,6 @@ export function layoutTemplate(template: NetTemplate, input: BoxInput): { faces:
       placed.add(neighbor)
       queue.push(neighbor)
 
-      const neighborPos = pos.get(neighbor)!
       folds.push({
         id: `fold:${conn.faceA}-${conn.faceB}`,
         faceAId: `face:${conn.faceA}`,

@@ -22,16 +22,15 @@ import {
   getDefaultProjectName,
   parseProjectFileContents,
 } from '../project/persistence.ts'
-import { layoutTemplate } from '../../domain/layout/index.ts'
+import { layoutTemplate, type LayoutResult } from '../../domain/layout/index.ts'
 import { getMaterialDefinition } from '../../domain/materials/index.ts'
 import { getPaperDefinition, type Orientation, type OrientationPreference } from '../../domain/paper/index.ts'
-import { generateBoxTemplateCandidates, generateBoxTemplate, type BoxNetType } from '../../domain/shapes/box/index.ts'
+import { generateBoxTemplateCandidates, type BoxNetType } from '../../domain/shapes/box/index.ts'
 import { generateCylinderTemplate } from '../../domain/shapes/cylinder/index.ts'
 import { formatLength } from '../../domain/units/index.ts'
 import {
   DEFAULT_MAX_DIMENSION_MM,
   DEFAULT_MIN_DIMENSION_MM,
-  type ValidationMessage,
   mergeValidationResults,
   validateCylinderInput,
   validateLayoutResult,
@@ -43,16 +42,16 @@ import { type BoxDraft, useAppStore } from '../../store/app-store.ts'
 import type { LayoutStatus } from '../../domain/layout/index.ts'
 import styles from './WorkspacePage.module.css'
 
-function calculateTotalOverflow(layout: { printableAreaOverflow: boolean; pages: { printableBounds: { width: number; height: number }; partPlacements: { bounds: { x: number; y: number; width: number; height: number } }[] }[] }) {
+function calculateTotalOverflow(layout: LayoutResult) {
   if (!layout.printableAreaOverflow) return 0
   let total = 0
   for (const page of layout.pages) {
     for (const pp of page.partPlacements) {
       const b = pp.bounds
-      const bRight = b.x + b.width
-      const bBottom = b.y + b.height
-      if (bRight > page.printableBounds.width) total += bRight - page.printableBounds.width
-      if (bBottom > page.printableBounds.height) total += bBottom - page.printableBounds.height
+      const bRight = pp.offsetX + b.maxX
+      const bBottom = pp.offsetY + b.maxY
+      if (bRight > page.printableBounds.maxX) total += bRight - page.printableBounds.maxX
+      if (bBottom > page.printableBounds.maxY) total += bBottom - page.printableBounds.maxY
     }
   }
   return total
@@ -226,7 +225,6 @@ export function WorkspacePage() {
     unitSystem,
   } = useAppStore()
   const preview = useMemo(() => buildDraftPreview(draft, 'preview-draft'), [draft])
-  const primaryPart = preview.template.parts[0]!
   const draftMaterial = getMaterialDefinition(draft.materialId)
   const canExportPreviewSvg = !hasBlockingIssues(preview.shapeValidation.messages)
   const canExportPreviewPdf = !hasBlockingIssues(preview.validation.messages)
@@ -236,10 +234,6 @@ export function WorkspacePage() {
   const [selectedAssemblyFaceId, setSelectedAssemblyFaceId] = useState<AssemblyFaceId | null>(null)
   const [activeAssemblyStepId, setActiveAssemblyStepId] = useState<AssemblySequenceStepId | null>(null)
   const [queueOpen, setQueueOpen] = useState(false)
-  const editingQueueItem =
-    editingQueueItemId === null
-      ? null
-      : queueItems.find((item) => item.id === editingQueueItemId) ?? null
 
   const assemblyModel: AssemblyModel = useMemo(() => {
     if (preview.template.shapeType === 'cylinder') {

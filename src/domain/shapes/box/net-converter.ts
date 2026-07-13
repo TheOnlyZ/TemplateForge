@@ -1,7 +1,7 @@
 import { getBounds, type Point } from '../../geometry/index.ts'
 import type { Fold, Net } from '../../geometry/net.ts'
 import type { CutPath, FoldLine, Panel, Tab } from '../../templates/index.ts'
-import { createEntityId, getOutlineBounds, getRectangleCenter, type ShapeGenerationContext, type ShapeGenerationResult } from '../shared/index.ts'
+import { createEntityId, type ShapeGenerationContext, type ShapeGenerationResult } from '../shared/index.ts'
 import { buildTemplateItem, type BoxInput } from './index.ts'
 
 function faceToPanel(

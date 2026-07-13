@@ -2,7 +2,6 @@ import { clampMarginConfig, getDefaultMarginConfig } from '../../domain/paper/in
 import type { MaterialId } from '../../domain/materials/index.ts'
 import type { BoxInput, BoxStyle } from '../../domain/shapes/box/index.ts'
 import type { CylinderInput } from '../../domain/shapes/cylinder/index.ts'
-import type { ShapeType } from '../../domain/shapes/shared/index.ts'
 import type { UnitSystem } from '../../domain/units/index.ts'
 import {
   createDefaultProjectState,
@@ -14,7 +13,6 @@ import {
 
 const PROJECT_FILE_VERSION = 1
 const VALID_UNIT_SYSTEMS = ['metric', 'imperial'] satisfies UnitSystem[]
-const VALID_SHAPE_TYPES = ['box', 'cylinder'] satisfies ShapeType[]
 const VALID_DRAFT_STEPS = [
   'shape',
   'dimensions',
@@ -22,7 +20,6 @@ const VALID_DRAFT_STEPS = [
   'material',
   'paper',
   'preview',
-  'queue',
 ] satisfies BoxWizardStepId[]
 const VALID_BOX_STYLES = ['glue-tab-carton', 'tuck-carton', 'open-tray'] satisfies BoxStyle[]
 const VALID_MATERIAL_IDS = [
@@ -58,6 +55,10 @@ function parseUnitSystem(value: unknown, fallback: UnitSystem): UnitSystem {
 }
 
 function parseDraftStep(value: unknown, fallback: BoxWizardStepId): BoxWizardStepId {
+  if (value === 'queue') {
+    return 'preview'
+  }
+
   return VALID_DRAFT_STEPS.includes(value as BoxWizardStepId)
     ? (value as BoxWizardStepId)
     : fallback
@@ -88,8 +89,8 @@ function parseCylinderInput(value: unknown, fallback: CylinderInput): CylinderIn
   }
 }
 
-function parseShapeType(value: unknown, fallback: ShapeType): ShapeType {
-  return VALID_SHAPE_TYPES.includes(value as ShapeType) ? (value as ShapeType) : fallback
+function parseShapeType(value: unknown, fallback: BoxDraft['shapeType']): BoxDraft['shapeType'] {
+  return value === 'box' || value === 'cylinder' ? value : fallback
 }
 
 function parseDraft(value: unknown, fallback: BoxDraft): BoxDraft {

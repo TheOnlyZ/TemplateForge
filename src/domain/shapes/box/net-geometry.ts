@@ -34,12 +34,6 @@ function attachGlueTab(faces: Face[], input: BoxInput): GlueTab {
   }
 }
 
-function findDimensions(face: Face): { externalLengthMm: number; externalWidthMm: number; externalHeightMm: number } {
-  const w = face.widthMm
-  const h = face.heightMm
-  return { externalLengthMm: Math.max(w, h), externalWidthMm: Math.min(w, h), externalHeightMm: 0 }
-}
-
 function flapLabel(spec: FlapSpec, style: BoxInput['style']): string {
   const faceName = spec.parentFace.charAt(0).toUpperCase() + spec.parentFace.slice(1)
   const prefix = spec.attachEdge === 'top' ? 'Top' : 'Bottom'
