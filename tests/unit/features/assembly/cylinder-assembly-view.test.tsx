@@ -71,7 +71,7 @@ describe('CylinderAssemblyView', () => {
       />,
     )
 
-    fireEvent.click(screen.getByRole('button', { name: 'Exploded View' }))
+    fireEvent.click(screen.getByRole('radio', { name: 'Exploded View' }))
     expect(onModeChange).toHaveBeenCalledWith('exploded')
 
     const bodyFace = container.querySelector('[data-face-id="body"]')

@@ -1,13 +1,10 @@
 .workspace {
-  display: grid;
-  grid-template-columns: 1fr 20rem;
-  gap: var(--space-xl);
+  flex: 1;
+  overflow-y: auto;
   padding: var(--space-xl);
-  overflow-x: hidden;
-}
-
-.rightPanel {
-  align-self: start;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
 }
 
 .canvas {
@@ -24,7 +21,7 @@
 
 .stageTitle {
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: var(--font-semibold);
   color: var(--text);
   margin: 0;
 }
@@ -50,14 +47,14 @@
 
 .chipLabel {
   color: var(--text-muted);
-  font-size: 0.65rem;
+  font-size: var(--text-micro);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: var(--tracking-wide);
 }
 
 .chipValue {
   color: var(--text-h);
-  font-weight: 600;
+  font-weight: var(--font-semibold);
 }
 
 .chipOk .chipValue {
@@ -66,40 +63,4 @@
 
 .chipWarn .chipValue {
   color: #fbbf24;
-}
-
-.validationBar {
-  padding: var(--space-xl);
-  padding-top: 0;
-}
-
-.queueToggle {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-md);
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  user-select: none;
-  font-size: var(--text-sm);
-  color: var(--text);
-  transition: background var(--transition);
-}
-
-.queueToggle:hover {
-  background: var(--surface-hover);
-}
-
-.queueToggleActions {
-  display: flex;
-  gap: 0.35rem;
-  align-items: center;
-}
-
-@media (max-width: 1280px) {
-  .workspace {
-    grid-template-columns: 1fr;
-  }
 }

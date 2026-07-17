@@ -33,10 +33,10 @@ export function exportTemplateToSvg(template: TemplateItem) {
   <desc>TemplateForge shape export for ${templateName}</desc>
   <defs>
     <style>
-      .panel { fill: rgba(122, 162, 255, 0.12); stroke: rgba(122, 162, 255, 0.2); stroke-width: 1; }
-      .cut, .tab { fill: none; stroke: #1f2937; stroke-width: 1.4; stroke-linejoin: round; stroke-linecap: round; }
-      .fold { fill: none; stroke: #4f7dff; stroke-width: 1.2; stroke-dasharray: 6 4; }
-      .label { fill: #111827; font-size: 11px; text-anchor: middle; dominant-baseline: middle; font-family: Inter, Arial, sans-serif; }
+      .panel { fill: rgba(180, 180, 185, 0.15); stroke: rgba(180, 180, 185, 0.25); stroke-width: 1; }
+      .cut, .tab { fill: none; stroke: #18181b; stroke-width: 1.4; stroke-linejoin: round; stroke-linecap: round; }
+      .fold { fill: none; stroke: #6366f1; stroke-width: 1.2; stroke-dasharray: 6 4; }
+      .label { fill: #18181b; font-size: 11px; text-anchor: middle; dominant-baseline: middle; font-family: Inter, Arial, sans-serif; }
     </style>
   </defs>
   <g data-kind="panels">

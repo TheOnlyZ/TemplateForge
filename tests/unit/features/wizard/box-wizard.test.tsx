@@ -49,42 +49,7 @@ describe('BoxWizard', () => {
     expect(useAppStore.getState().draft.boxInput.externalLengthMm).toBeCloseTo(127, 3)
   })
 
-  it('lets users click wizard steps directly', () => {
-    useAppStore.setState({ draftStep: 'shape' })
-    const { template } = generateBoxTemplate(
-      {
-        externalLengthMm: 120,
-        externalWidthMm: 80,
-        externalHeightMm: 24,
-        glueTabWidthMm: 12,
-        style: 'open-tray',
-      },
-      {
-        itemId: 'wizard-preview',
-        itemName: 'Wizard Preview',
-      },
-    )
-
-    render(
-      <BoxWizard
-        unitSystem="metric"
-        previewTemplate={template}
-        canExportPreviewPdf={true}
-        canExportPreviewSvg={true}
-        onExportPreviewPdf={vi.fn()}
-        onExportPreviewSvg={vi.fn()}
-        layoutStatus={{ type: 'single-piece', description: 'Fits on one page', errorCount: 0, warningCount: 0 }}
-        messages={[]}
-      />,
-    )
-
-    fireEvent.click(screen.getByRole('button', { name: /2 dimensions/i }))
-
-    expect(useAppStore.getState().draftStep).toBe('dimensions')
-    expect(screen.getByLabelText(/Length \(mm\)/)).toBeInTheDocument()
-  })
-
-  it('shows fit status only from the dimensions step onward', () => {
+  it('shows the fit status badge', () => {
     const { template } = generateBoxTemplate(
       {
         externalLengthMm: 120,
@@ -110,20 +75,11 @@ describe('BoxWizard', () => {
       messages: [],
     }
 
-    act(() => {
-      useAppStore.setState({ draftStep: 'shape' })
-    })
-    const { rerender } = render(<BoxWizard {...props} />)
-    expect(screen.queryByText('Fits')).toBeNull()
-
-    act(() => {
-      useAppStore.setState({ draftStep: 'dimensions' })
-      rerender(<BoxWizard {...props} />)
-    })
+    render(<BoxWizard {...props} />)
     expect(screen.getByText('Fits')).toBeInTheDocument()
   })
 
-  it('starts over from step 1 without clearing the queue', () => {
+  it('starts over without clearing the queue', () => {
     useAppStore.getState().setDraftName('Queued Box')
     useAppStore.getState().addDraftToQueue()
     useAppStore.getState().setDraftStep('paper')
@@ -157,6 +113,7 @@ describe('BoxWizard', () => {
     )
 
     fireEvent.click(screen.getByRole('button', { name: 'Start Over' }))
+    fireEvent.click(screen.getAllByRole('button', { name: 'Start Over' })[1])
 
     const state = useAppStore.getState()
     expect(state.draftStep).toBe('shape')

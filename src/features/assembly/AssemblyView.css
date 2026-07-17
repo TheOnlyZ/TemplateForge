@@ -12,16 +12,16 @@
   border-radius: var(--radius-md);
   overflow: hidden;
   background:
-    radial-gradient(circle at top left, rgba(255, 255, 255, 0.05), transparent 28%),
-    linear-gradient(180deg, rgba(20, 26, 35, 0.98), rgba(12, 16, 23, 0.96));
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.04), transparent 28%),
+    linear-gradient(180deg, rgba(36, 36, 42, 0.98), rgba(18, 18, 24, 0.96));
 }
 
 .assembly-view__shadow {
-  fill: rgba(7, 10, 17, 0.4);
+  fill: rgba(0, 0, 0, 0.35);
 }
 
 .assembly-view__face {
-  stroke: rgba(244, 247, 251, 0.18);
+  stroke: rgba(220, 220, 225, 0.15);
   stroke-width: 1;
   stroke-linejoin: round;
   transition:
@@ -31,26 +31,26 @@
     filter var(--transition);
 }
 
-.assembly-view__face--front { fill: rgba(124, 132, 146, 0.85); }
-.assembly-view__face--back { fill: rgba(90, 98, 110, 0.75); }
-.assembly-view__face--left { fill: rgba(98, 106, 118, 0.8); }
-.assembly-view__face--right { fill: rgba(92, 101, 114, 0.84); }
-.assembly-view__face--side { fill: rgba(92, 101, 114, 0.84); }
-.assembly-view__face--top { fill: rgba(146, 154, 166, 0.9); }
-.assembly-view__face--body { fill: rgba(124, 132, 146, 0.85); }
-.assembly-view__face--bottom { fill: rgba(76, 82, 94, 0.88); }
-.assembly-view__face--rim { fill: rgba(138, 146, 158, 0.88); }
-.assembly-view__face--base { fill: rgba(76, 82, 94, 0.88); }
+.assembly-view__face--front { fill: rgba(155, 155, 165, 0.85); }
+.assembly-view__face--back { fill: rgba(115, 115, 125, 0.75); }
+.assembly-view__face--left { fill: rgba(125, 125, 135, 0.8); }
+.assembly-view__face--right { fill: rgba(125, 125, 135, 0.84); }
+.assembly-view__face--side { fill: rgba(125, 125, 135, 0.84); }
+.assembly-view__face--top { fill: rgba(175, 175, 185, 0.9); }
+.assembly-view__face--body { fill: rgba(155, 155, 165, 0.85); }
+.assembly-view__face--bottom { fill: rgba(95, 95, 105, 0.88); }
+.assembly-view__face--rim { fill: rgba(165, 165, 175, 0.88); }
+.assembly-view__face--base { fill: rgba(95, 95, 105, 0.88); }
 
 .assembly-view__opening-rim {
-  fill: rgba(138, 146, 158, 0.88);
-  stroke: rgba(244, 247, 251, 0.18);
+  fill: rgba(165, 165, 175, 0.88);
+  stroke: rgba(220, 220, 225, 0.15);
   stroke-width: 1;
 }
 
 .assembly-view__opening {
-  fill: rgba(8, 13, 22, 0.85);
-  stroke: rgba(244, 247, 251, 0.1);
+  fill: rgba(10, 10, 15, 0.85);
+  stroke: rgba(220, 220, 225, 0.08);
   stroke-width: 1;
   transition: stroke var(--transition), fill var(--transition);
 }
@@ -58,7 +58,7 @@
 .assembly-view__rim-line,
 .assembly-view__closure-line {
   fill: none;
-  stroke: rgba(244, 247, 251, 0.3);
+  stroke: rgba(220, 220, 225, 0.25);
   stroke-width: 1;
   stroke-linejoin: round;
   stroke-linecap: round;
@@ -71,15 +71,15 @@
 
 .assembly-view__face-label {
   fill: var(--text-h);
-  font-size: 0.6875rem;
-  font-weight: 600;
+  font-size: var(--text-caption);
+  font-weight: var(--font-semibold);
   text-anchor: middle;
   dominant-baseline: middle;
   transition: fill var(--transition);
 }
 
 .assembly-view__face-label--muted {
-  fill: rgba(244, 247, 251, 0.7);
+  fill: rgba(220, 220, 225, 0.6);
 }
 
 .assembly-view__face-group,
@@ -93,10 +93,10 @@
 }
 
 .assembly-view__face.is-highlighted {
-  stroke: rgba(207, 224, 255, 0.88);
+  stroke: rgba(220, 220, 230, 0.8);
   stroke-width: 1.7;
-  filter: drop-shadow(0 0 8px rgba(122, 162, 255, 0.15));
-  fill: rgba(91, 134, 223, 0.88);
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.07));
+  fill: rgba(200, 200, 215, 0.88);
 }
 
 .assembly-view__face.is-transparent {
@@ -104,13 +104,13 @@
 }
 
 .assembly-view__opening.is-highlighted {
-  stroke: rgba(207, 224, 255, 0.48);
-  fill: rgba(15, 24, 38, 0.9);
+  stroke: rgba(220, 220, 230, 0.4);
+  fill: rgba(20, 20, 28, 0.9);
 }
 
 .assembly-view__rim-line.is-highlighted,
 .assembly-view__closure-line.is-highlighted {
-  stroke: rgba(207, 224, 255, 0.72);
+  stroke: rgba(220, 220, 230, 0.65);
   stroke-width: 1.35;
 }
 
@@ -131,7 +131,7 @@
   padding: 0.75rem 0.9rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(128, 128, 128, 0.03);
 }
 
 .assembly-view__summary-card p {
@@ -165,25 +165,25 @@
 
 .assembly-view__cue-line {
   fill: none;
-  stroke: rgba(167, 187, 214, 0.7);
+  stroke: rgba(180, 180, 190, 0.55);
   stroke-width: 1.1;
   stroke-dasharray: 4 3;
 }
 
 .assembly-view__cue-arrow {
-  fill: rgba(167, 187, 214, 0.8);
+  fill: rgba(180, 180, 190, 0.65);
 }
 
 .assembly-view__cue-badge rect {
-  fill: rgba(35, 46, 64, 0.92);
-  stroke: rgba(122, 162, 255, 0.4);
+  fill: rgba(30, 30, 36, 0.92);
+  stroke: rgba(200, 200, 210, 0.3);
   stroke-width: 1;
 }
 
 .assembly-view__cue-badge text {
   fill: var(--text-h);
-  font-size: 0.625rem;
-  font-weight: 600;
+  font-size: var(--text-micro);
+  font-weight: var(--font-semibold);
   text-anchor: middle;
 }
 
@@ -257,7 +257,7 @@
   width: 1.25rem;
   height: 1.25rem;
   border-radius: 999px;
-  background: rgba(153, 167, 187, 0.12);
+  background: rgba(128, 128, 128, 0.15);
   font-size: var(--text-xs);
   flex-shrink: 0;
 }
@@ -289,5 +289,5 @@
 }
 
 .assembly-view__step.active small {
-  color: rgba(244, 247, 251, 0.75);
+  color: rgba(255, 255, 255, 0.65);
 }

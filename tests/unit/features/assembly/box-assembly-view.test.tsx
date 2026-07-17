@@ -74,7 +74,7 @@ describe('BoxAssemblyView', () => {
 
     expect(screen.getByRole('img', { name: 'Assembly Box assembled 3D view' })).toBeInTheDocument()
     expect(screen.getByText('This is the finished object.')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Finished Object' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('radio', { name: 'Finished Object' })).toHaveAttribute('aria-checked', 'true')
     expect(screen.getByText('Base')).toBeInTheDocument()
     expect(screen.getByText('120 mm L')).toBeInTheDocument()
     expect(screen.getByText('80 mm W')).toBeInTheDocument()
@@ -158,7 +158,7 @@ describe('BoxAssemblyView', () => {
       />,
     )
 
-    fireEvent.click(screen.getByRole('button', { name: 'Exploded View' }))
+    fireEvent.click(screen.getByRole('radio', { name: 'Exploded View' }))
 
     expect(onModeChange).toHaveBeenCalledWith('exploded')
 

@@ -6,9 +6,9 @@ import { buildBoxAssemblyModel, buildCylinderAssemblyModel } from '../assembly/m
 import type { AssemblyFaceId, AssemblyMode, AssemblySequenceStepId, AssemblyModel } from '../assembly/model.ts'
 import { TemplatePreview } from '../preview/TemplatePreview.tsx'
 import { BoxWizard } from '../wizard/box-wizard/BoxWizard.tsx'
-import { Toolbar } from './Toolbar.tsx'
-import { Button } from '../../components/Button.tsx'
-import { QueueSection } from './QueueSection.tsx'
+import { TopBar } from './TopBar.tsx'
+import { Sidebar } from './Sidebar.tsx'
+import { StatusBar } from './StatusBar.tsx'
 import {
   buildPdfFileName,
   buildProjectPdfFileName,
@@ -215,13 +215,9 @@ function buildLayoutStatus(
 export function WorkspacePage() {
   const {
     draft,
-    duplicateQueueItem,
     editingQueueItemId,
     loadProjectSnapshot,
     queueItems,
-    removeQueueItem,
-    setUnitSystem,
-    startEditingQueueItem,
     unitSystem,
   } = useAppStore()
   const preview = useMemo(() => buildDraftPreview(draft, 'preview-draft'), [draft])
@@ -233,7 +229,6 @@ export function WorkspacePage() {
   const [hoveredAssemblyFaceId, setHoveredAssemblyFaceId] = useState<AssemblyFaceId | null>(null)
   const [selectedAssemblyFaceId, setSelectedAssemblyFaceId] = useState<AssemblyFaceId | null>(null)
   const [activeAssemblyStepId, setActiveAssemblyStepId] = useState<AssemblySequenceStepId | null>(null)
-  const [queueOpen, setQueueOpen] = useState(false)
 
   const assemblyModel: AssemblyModel = useMemo(() => {
     if (preview.template.shapeType === 'cylinder') {
@@ -374,121 +369,133 @@ export function WorkspacePage() {
     }
   }
 
+  const orientationLabel = getOrientationStrategyLabel(draft.orientation, preview.layout)
+
   return (
-    <>
-      <Toolbar
-        unitSystem={unitSystem}
-        onUnitSystemChange={setUnitSystem}
+    <div className="flex h-screen flex-col">
+      <TopBar
         onSaveProject={saveProjectFile}
         onOpenProject={() => projectFileInputRefVal.current?.click()}
         projectFileInputRef={projectFileInputRefVal}
         onProjectFileChange={handleProjectFileChange}
       />
 
-      <main className={styles.workspace}>
-        <section className={styles.canvas}>
-          <div className={styles.infoBar}>
-            <span className={styles.chip}>
-              <span className={styles.chipLabel}>Draft</span>
-              <span className={styles.chipValue}>{draft.name}</span>
-            </span>
-            <span className={styles.chip}>
-              <span className={styles.chipLabel}>Shape</span>
-              <span className={styles.chipValue}>
-                {draft.shapeType === 'cylinder' ? 'Straight Cylinder' : getStyleLabel(String(preview.template.metadata.style))}
-              </span>
-            </span>
-            <span className={styles.chip}>
-              <span className={styles.chipLabel}>Material</span>
-              <span className={styles.chipValue}>{draftMaterial.label}</span>
-            </span>
-            <span className={styles.chip}>
-              <span className={styles.chipLabel}>Paper</span>
-              <span className={styles.chipValue}>
-                {preview.paper.label} · {getOrientationStrategyLabel(draft.orientation, preview.layout)}
-              </span>
-            </span>
-            <span className={styles.chip}>
-              <span className={styles.chipLabel}>Printable</span>
-              <span className={styles.chipValue}>
-                {formatLength(preview.layout.printableArea.width, unitSystem)} × {formatLength(preview.layout.printableArea.height, unitSystem)}
-              </span>
-            </span>
-            <span className={styles.chip}>
-              <span className={styles.chipLabel}>Limits</span>
-              <span className={styles.chipValue}>
-                {formatLength(DEFAULT_MIN_DIMENSION_MM, unitSystem)}–{formatLength(DEFAULT_MAX_DIMENSION_MM, unitSystem)}
-              </span>
-            </span>
-            <span className={`${styles.chip} ${preview.layout.hasLegalPlacement ? styles.chipOk : styles.chipWarn}`}>
-              <span className={styles.chipLabel}>Status</span>
-              <span className={styles.chipValue}>
-                {preview.layout.layoutType === 'multi-piece'
-                  ? `${preview.layout.assemblyCount} pieces`
-                  : preview.layout.hasLegalPlacement
-                    ? 'Fits'
-                    : 'Overflow'}
-              </span>
-            </span>
-          </div>
+      <div className="flex flex-1 overflow-hidden">
+        <Sidebar
+          unitSystem={unitSystem}
+          editingQueueItemId={editingQueueItemId}
+          onExportItemPdf={exportQueueItemPdf}
+          onExportItemSvg={exportQueueItemSvg}
+          onExportBatchPdf={exportProjectQueuePdf}
+          exportableCount={exportableQueueItems.length}
+          buildItemPreview={(item) => buildDraftPreview(item, item.id)}
+        />
 
-          <div className={styles.previewStage}>
-            <h3 className={styles.stageTitle}>Template Preview</h3>
-            <TemplatePreview
-              faceLabelLookup={assemblyModel.targetIdToFaceLabel}
-              faceTargetLookup={assemblyModel.targetIdToFaceId}
-              glueTabIds={assemblyModel.glueTabIds}
-              selectedFaceId={selectedAssemblyFaceId}
-              template={preview.template}
-              highlightedFoldIds={highlightedFoldIds}
-              highlightedTargetIds={highlightedTargetIds}
-              onFaceHoverChange={setHoveredAssemblyFaceId}
-              onFaceSelect={setSelectedAssemblyFaceId}
-            />
-          </div>
+        <main className={styles.workspace}>
+          <section className={styles.canvas}>
+            <div className={styles.infoBar}>
+              <span className={styles.chip}>
+                <span className={styles.chipLabel}>Draft</span>
+                <span className={styles.chipValue}>{draft.name}</span>
+              </span>
+              <span className={styles.chip}>
+                <span className={styles.chipLabel}>Shape</span>
+                <span className={styles.chipValue}>
+                  {draft.shapeType === 'cylinder' ? 'Straight Cylinder' : getStyleLabel(String(preview.template.metadata.style))}
+                </span>
+              </span>
+              <span className={styles.chip}>
+                <span className={styles.chipLabel}>Material</span>
+                <span className={styles.chipValue}>{draftMaterial.label}</span>
+              </span>
+              <span className={styles.chip}>
+                <span className={styles.chipLabel}>Paper</span>
+                <span className={styles.chipValue}>
+                  {preview.paper.label} · {orientationLabel}
+                </span>
+              </span>
+              <span className={styles.chip}>
+                <span className={styles.chipLabel}>Printable</span>
+                <span className={styles.chipValue}>
+                  {formatLength(preview.layout.printableArea.width, unitSystem)} × {formatLength(preview.layout.printableArea.height, unitSystem)}
+                </span>
+              </span>
+              <span className={styles.chip}>
+                <span className={styles.chipLabel}>Limits</span>
+                <span className={styles.chipValue}>
+                  {formatLength(DEFAULT_MIN_DIMENSION_MM, unitSystem)}–{formatLength(DEFAULT_MAX_DIMENSION_MM, unitSystem)}
+                </span>
+              </span>
+              <span className={`${styles.chip} ${preview.layout.hasLegalPlacement ? styles.chipOk : styles.chipWarn}`}>
+                <span className={styles.chipLabel}>Status</span>
+                <span className={styles.chipValue}>
+                  {preview.layout.layoutType === 'multi-piece'
+                    ? `${preview.layout.assemblyCount} pieces`
+                    : preview.layout.hasLegalPlacement
+                      ? 'Fits'
+                      : 'Overflow'}
+                </span>
+              </span>
+            </div>
 
-          <div className={styles.previewStage}>
-            <h3 className={styles.stageTitle}>3D Assembly</h3>
-            {preview.template.shapeType === 'cylinder' ? (
-              <CylinderAssemblyView
-                activeFaceId={effectiveAssemblyFaceId}
-                activeStepId={activeAssemblyStep?.id ?? null}
-                name={preview.template.name}
-                cylinderInput={{
-                  diameterMm: Number(preview.template.dimensionsMm.diameter ?? 0),
-                  heightMm: Number(preview.template.dimensionsMm.height ?? 0),
-                }}
-                mode={assemblyMode}
-                model={assemblyModel}
+            <div className={styles.previewStage}>
+              <h3 className={styles.stageTitle}>Template Preview</h3>
+              <TemplatePreview
+                faceLabelLookup={assemblyModel.targetIdToFaceLabel}
+                faceTargetLookup={assemblyModel.targetIdToFaceId}
+                glueTabIds={assemblyModel.glueTabIds}
+                selectedFaceId={selectedAssemblyFaceId}
+                template={preview.template}
+                highlightedFoldIds={highlightedFoldIds}
+                highlightedTargetIds={highlightedTargetIds}
                 onFaceHoverChange={setHoveredAssemblyFaceId}
                 onFaceSelect={setSelectedAssemblyFaceId}
-                onModeChange={setAssemblyMode}
-                onStepChange={setActiveAssemblyStepId}
-                partMappings={assemblyPartMappings}
-                selectedFaceId={selectedAssemblyFaceId}
-                unitSystem={unitSystem}
               />
-            ) : (
-              <BoxAssemblyView
-                activeFaceId={effectiveAssemblyFaceId}
-                activeStepId={activeAssemblyStep?.id ?? null}
-                name={draft.name}
-                boxInput={draft.boxInput}
-                mode={assemblyMode}
-                model={assemblyModel}
-                onFaceHoverChange={setHoveredAssemblyFaceId}
-                onFaceSelect={setSelectedAssemblyFaceId}
-                onModeChange={setAssemblyMode}
-                onStepChange={setActiveAssemblyStepId}
-                partMappings={assemblyPartMappings}
-                selectedFaceId={selectedAssemblyFaceId}
-                unitSystem={unitSystem}
-              />
-            )}
-          </div>
-        </section>
+            </div>
 
-        <aside className={styles.rightPanel}>
+            <div className={styles.previewStage}>
+              <h3 className={styles.stageTitle}>3D Assembly</h3>
+              {preview.template.shapeType === 'cylinder' ? (
+                <CylinderAssemblyView
+                  activeFaceId={effectiveAssemblyFaceId}
+                  activeStepId={activeAssemblyStep?.id ?? null}
+                  name={preview.template.name}
+                  cylinderInput={{
+                    diameterMm: Number(preview.template.dimensionsMm.diameter ?? 0),
+                    heightMm: Number(preview.template.dimensionsMm.height ?? 0),
+                  }}
+                  mode={assemblyMode}
+                  model={assemblyModel}
+                  onFaceHoverChange={setHoveredAssemblyFaceId}
+                  onFaceSelect={setSelectedAssemblyFaceId}
+                  onModeChange={setAssemblyMode}
+                  onStepChange={setActiveAssemblyStepId}
+                  partMappings={assemblyPartMappings}
+                  selectedFaceId={selectedAssemblyFaceId}
+                  unitSystem={unitSystem}
+                />
+              ) : (
+                <BoxAssemblyView
+                  activeFaceId={effectiveAssemblyFaceId}
+                  activeStepId={activeAssemblyStep?.id ?? null}
+                  name={draft.name}
+                  boxInput={draft.boxInput}
+                  mode={assemblyMode}
+                  model={assemblyModel}
+                  onFaceHoverChange={setHoveredAssemblyFaceId}
+                  onFaceSelect={setSelectedAssemblyFaceId}
+                  onModeChange={setAssemblyMode}
+                  onStepChange={setActiveAssemblyStepId}
+                  partMappings={assemblyPartMappings}
+                  selectedFaceId={selectedAssemblyFaceId}
+                  unitSystem={unitSystem}
+                />
+              )}
+            </div>
+          </section>
+        </main>
+
+        <aside className="flex w-80 shrink-0 flex-col overflow-y-auto border-l border-border bg-surface">
           <BoxWizard
             unitSystem={unitSystem}
             previewTemplate={preview.template}
@@ -500,31 +507,16 @@ export function WorkspacePage() {
             messages={preview.validation.messages}
           />
         </aside>
-      </main>
-
-      <div className={styles.validationBar}>
-        <div className={styles.queueToggle} role="button" tabIndex={0} onClick={() => setQueueOpen((v) => !v)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setQueueOpen((v) => !v) }}}>
-          <span>{queueOpen ? '▾' : '▸'} Project Queue ({queueItems.length} item{queueItems.length !== 1 ? 's' : ''})</span>
-          {queueItems.length > 0 && <span className={styles.queueToggleActions}>
-            <Button size="sm" onClick={(e) => { e.stopPropagation(); exportProjectQueuePdf() }} disabled={exportableQueueItems.length === 0}>Batch PDF</Button>
-          </span>}
-        </div>
-        {queueOpen && (
-          <QueueSection
-            queueItems={queueItems}
-            editingQueueItemId={editingQueueItemId}
-            unitSystem={unitSystem}
-            onExportBatchPdf={exportProjectQueuePdf}
-            onExportItemPdf={exportQueueItemPdf}
-            onExportItemSvg={exportQueueItemSvg}
-            onEditItem={startEditingQueueItem}
-            onDuplicateItem={duplicateQueueItem}
-            onRemoveItem={removeQueueItem}
-            exportableCount={exportableQueueItems.length}
-            buildItemPreview={(item) => buildDraftPreview(item, item.id)}
-          />
-        )}
       </div>
-    </>
+
+      <StatusBar
+        paperLabel={preview.paper.label}
+        orientationLabel={orientationLabel}
+        printableWidthMm={preview.layout.printableArea.width}
+        printableHeightMm={preview.layout.printableArea.height}
+        unitSystem={unitSystem}
+        layoutStatus={preview.layoutStatus}
+      />
+    </div>
   )
 }

@@ -1,4 +1,7 @@
 import { type PointerEvent, useEffect, useMemo, useRef, useState } from 'react'
+import { Badge } from '../../components/ui/badge.tsx'
+import { Button } from '../../components/ui/button.tsx'
+import { ToggleGroupItem, ToggleGroupRoot } from '../../components/ui/toggle-group.tsx'
 import type { AssemblyPartMapping } from './mapping.ts'
 import type {
   AssemblyFaceId,
@@ -161,39 +164,20 @@ export function CylinderAssemblyView({
   return (
     <div className="assembly-view">
       <div className="assembly-view__mode-bar">
-        <div className="toolbar-group" aria-label="Assembly modes">
-          <button
-            type="button"
-            className="toolbar-button"
-            aria-pressed={mode === 'finished'}
-            onClick={() => handleModeChange('finished')}
-          >
+        <ToggleGroupRoot value={mode} onValueChange={(v) => handleModeChange(v as AssemblyMode)}>
+          <ToggleGroupItem value="finished" selectedValue={mode} onSelect={() => handleModeChange('finished')}>
             Finished Object
-          </button>
-          <button
-            type="button"
-            className="toolbar-button"
-            aria-pressed={mode === 'exploded'}
-            onClick={() => handleModeChange('exploded')}
-          >
+          </ToggleGroupItem>
+          <ToggleGroupItem value="exploded" selectedValue={mode} onSelect={() => handleModeChange('exploded')}>
             Exploded View
-          </button>
-          <button
-            type="button"
-            className="toolbar-button"
-            aria-pressed={mode === 'sequence'}
-            onClick={() => handleModeChange('sequence')}
-          >
+          </ToggleGroupItem>
+          <ToggleGroupItem value="sequence" selectedValue={mode} onSelect={() => handleModeChange('sequence')}>
             Assembly Sequence
-          </button>
-        </div>
-        <button
-          type="button"
-          className="toolbar-button toolbar-button--ghost"
-          onClick={() => setIsTransparent((currentValue) => !currentValue)}
-        >
+          </ToggleGroupItem>
+        </ToggleGroupRoot>
+        <Button variant="ghost" size="sm" onClick={() => setIsTransparent((currentValue) => !currentValue)}>
           {isTransparent ? 'Opaque Faces' : 'Show Through'}
-        </button>
+        </Button>
       </div>
 
       <svg
@@ -317,17 +301,13 @@ export function CylinderAssemblyView({
               <strong>{activeStep.title}</strong>
               <p>{activeStep.instruction}</p>
             </div>
-            <div className="toolbar-group assembly-view__controls">
-              <span className="tag">
+            <div className="flex shrink-0 items-center gap-2">
+              <Badge>
                 Step {model.steps.findIndex((step) => step.id === activeStep.id) + 1} of {model.steps.length}
-              </span>
-              <button
-                type="button"
-                className="toolbar-button"
-                onClick={() => setIsPlayingSequence((currentValue) => !currentValue)}
-              >
+              </Badge>
+              <Button variant="secondary" size="sm" onClick={() => setIsPlayingSequence((currentValue) => !currentValue)}>
                 {isPlayingSequence ? 'Pause Sequence' : 'Play Sequence'}
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -357,9 +337,9 @@ export function CylinderAssemblyView({
       <div className="assembly-view__mapping" aria-label="Part identification and page mapping">
         <div className="assembly-view__mapping-header">
           <strong>Part Identification</strong>
-          <span className="tag">
+          <Badge>
             {partMappings.length} part{partMappings.length === 1 ? '' : 's'}
-          </span>
+          </Badge>
         </div>
         <div className="assembly-view__mapping-list">
           {partMappings.map((mapping) => (
@@ -374,9 +354,7 @@ export function CylinderAssemblyView({
               </div>
               <div className="assembly-view__mapping-pages">
                 {mapping.pageLabels.map((label) => (
-                  <span key={label} className="meta-chip">
-                    {label}
-                  </span>
+                  <Badge key={label}>{label}</Badge>
                 ))}
               </div>
             </article>
@@ -385,8 +363,8 @@ export function CylinderAssemblyView({
       </div>
 
       <div className="assembly-view__meta" aria-label="Assembly dimensions">
-        <span className="meta-chip">{formatLength(cylinderInput.diameterMm, unitSystem)} diameter</span>
-        <span className="meta-chip">{formatLength(cylinderInput.heightMm, unitSystem)} height</span>
+        <Badge>{formatLength(cylinderInput.diameterMm, unitSystem)} diameter</Badge>
+        <Badge>{formatLength(cylinderInput.heightMm, unitSystem)} height</Badge>
       </div>
     </div>
   )
